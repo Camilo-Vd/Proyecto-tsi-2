@@ -3,11 +3,11 @@ import { Column, Table, Model, DataType } from "sequelize-typescript";
 @Table({ tableName: 'proveedores' })
 class Proveedor extends Model {
     @Column({ 
-        type: DataType.STRING(12), 
+        type: DataType.INTEGER, 
         primaryKey: true, 
         allowNull: false 
     })
-    declare rut_proveedor: string;
+    declare rut_proveedor: number;
 
     @Column({ 
         type: DataType.STRING(100), 
