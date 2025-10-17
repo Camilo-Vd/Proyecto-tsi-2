@@ -11,9 +11,6 @@ export async function action({ request }: ActionFunctionArgs) {
     return redirect("/");
 }
 
-
-
-
 export default function InicioSesion() {
     const actionData = useActionData() as {
         success?: boolean;
