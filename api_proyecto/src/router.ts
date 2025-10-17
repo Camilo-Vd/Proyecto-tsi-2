@@ -8,6 +8,7 @@ import {
 } from "./handlers/usuarios"
 import { actualizarContactoCliente, crearCliente, elimnarCliente, obtenerClientePorRut, obtenerClientes } from './handlers/clientes';
 import { actualizarProveedor, crearProveedor, eliminarProveedor, obtenerProveedores, obtenerProveedoresPorRut } from './handlers/proveedores';
+import { agregarInventario, editarInventario, eliminarInventario, obtenerInventarios } from './handlers/inventarios';
 
 
 const router = Router();
@@ -32,6 +33,12 @@ router.get('/proveedores/:rut', obtenerProveedoresPorRut) //para obtener proveed
 router.post('/proveedores/crear', crearProveedor) //para crear un proveedor
 router.put('/proveedores/actualizar', actualizarProveedor) //para modificar el proveedor
 router.delete('/proveedores/eliminar/:rut_proveedor', eliminarProveedor) //para eliminar un provedor
+
+
+router.get('/inventario', obtenerInventarios) //para obtener el inventario
+router.post('/inventario/crear', agregarInventario) //para agregar al inventario
+router.put('/inventario/:id_producto/:id_talla', editarInventario) //para editar el inventario
+router.delete('/inventario/:id_producto/:id_talla', eliminarInventario) //para eliminar del inventario
 
 
 export default router 
