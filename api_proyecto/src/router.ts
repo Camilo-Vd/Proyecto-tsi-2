@@ -9,6 +9,7 @@ import {
 import { actualizarContactoCliente, crearCliente, elimnarCliente, obtenerClientePorRut, obtenerClientes } from './handlers/clientes';
 import { actualizarProveedor, crearProveedor, eliminarProveedor, obtenerProveedores, obtenerProveedoresPorRut } from './handlers/proveedores';
 import { agregarInventario, editarInventario, eliminarInventario, obtenerInventarios } from './handlers/inventarios';
+import { agregarVenta, imprimirVenta, obtenerVentas } from './handlers/ventas';
 
 
 const router = Router();
@@ -40,5 +41,9 @@ router.post('/inventario/crear', agregarInventario) //para agregar al inventario
 router.put('/inventario/:id_producto/:id_talla', editarInventario) //para editar el inventario
 router.delete('/inventario/:id_producto/:id_talla', eliminarInventario) //para eliminar del inventario
 
+
+router.get('/ventas', obtenerVentas) //para obtener las ventas
+router.post('/ventas/crear', agregarVenta) //para agregar una venta
+router.get('/ventas/imprimir/:id_venta', imprimirVenta) //para imprimir una venta
 
 export default router 

@@ -37,6 +37,9 @@ class Venta extends Model {
         allowNull: false 
     })
     declare rut_usuario: string;
+    Usuario: any;
+    Cliente: any;
+    DetalleVenta: any;
 }
 
 export default Venta;
