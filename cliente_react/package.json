@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "cleinte_react",
+=======
+  "name": "cliente_react",
+>>>>>>> 94e2bc5ce7b43e7faff708ddfd0d336c643f4862
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,8 +18,11 @@
     "axios": "^1.10.0",
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",
+<<<<<<< HEAD
     "i": "^0.3.7",
     "npm": "^11.4.2",
+=======
+>>>>>>> 94e2bc5ce7b43e7faff708ddfd0d336c643f4862
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.3",
