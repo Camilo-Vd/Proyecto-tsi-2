@@ -28,6 +28,7 @@ class Inventario extends Model {
         field: 'stock_actual'
     })
     declare stock_actual: number;
+    Producto: any;
 }
 
 export default Inventario;
