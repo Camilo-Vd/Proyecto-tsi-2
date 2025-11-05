@@ -26,17 +26,17 @@ class Venta extends Model {
 
     @ForeignKey(() => Cliente)
     @Column({ 
-        type: DataType.STRING(12), 
+        type: DataType.INTEGER, 
         allowNull: false 
     })
-    declare rut_cliente: string;
+    declare rut_cliente: number;
 
     @ForeignKey(() => Usuario)
     @Column({ 
-        type: DataType.STRING(12), 
+        type: DataType.INTEGER, 
         allowNull: false 
     })
-    declare rut_usuario: string;
+    declare rut_usuario: number;
     Usuario: any;
     Cliente: any;
     DetalleVenta: any;
