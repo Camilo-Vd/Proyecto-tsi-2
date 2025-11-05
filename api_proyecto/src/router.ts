@@ -10,6 +10,7 @@ import { actualizarContactoCliente, crearCliente, elimnarCliente, obtenerCliente
 import { actualizarProveedor, crearProveedor, eliminarProveedor, obtenerProveedores, obtenerProveedoresPorRut } from './handlers/proveedores';
 import { agregarInventario, editarInventario, eliminarInventario, obtenerInventarios } from './handlers/inventarios';
 import { agregarVenta, imprimirVenta, obtenerVentas } from './handlers/ventas';
+import { productosAgotados, productosBajoStock, productosDisponibles } from './handlers/reportes';
 
 
 const router = Router();
@@ -45,5 +46,10 @@ router.delete('/inventario/:id_producto/:id_talla', eliminarInventario) //para e
 router.get('/ventas', obtenerVentas) //para obtener las ventas
 router.post('/ventas/crear', agregarVenta) //para agregar una venta
 router.get('/ventas/imprimir/:id_venta', imprimirVenta) //para imprimir una venta
+
+
+router.get('/reportes/inventario/productos-disponibles', productosDisponibles) //para obtener los productos disponibles
+router.get('/reportes/inventario/productos-bajo-stock', productosBajoStock) //para obtener los productos bajo stock
+router.get('/reportes/inventario/productos/agotados', productosAgotados) //para obtener los productos agotados
 
 export default router 
