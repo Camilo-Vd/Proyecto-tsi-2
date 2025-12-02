@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"lib": ["ESNext"], //version de javascript a la que se compila
+		"lib": ["ESNext", "DOM"], //version de javascript a la que se compila
 		"target": "ESNext",
 		"moduleResolution": "nodenext",
 		"module": "NodeNext",

@@ -29,8 +29,8 @@ export default function Proveedores() {
     // Filtra los proveedores por RUT o nombre si hay búsqueda
     const proveedoresFiltrados = busqueda.trim()
         ? proveedores.filter(proveedor =>
-            proveedor.rut_proveedor.toLowerCase().includes(busqueda.trim().toLowerCase()) ||
-            proveedor.nombre.toLowerCase().includes(busqueda.trim().toLowerCase())
+            String(proveedor.rut_proveedor).toLowerCase().includes(busqueda.trim().toLowerCase()) ||
+            String(proveedor.nombre_proveedor).toLowerCase().includes(busqueda.trim().toLowerCase())
         )
         : proveedores;
 

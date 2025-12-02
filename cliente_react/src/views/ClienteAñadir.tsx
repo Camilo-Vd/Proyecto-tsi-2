@@ -96,11 +96,11 @@ export default function ClienteAñadir() {
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Nombre completo</label>
-                    <input type="text" className="form-control" name="nombre" placeholder="Juan Pérez" required />
+                    <input type="text" className="form-control" name="nombre_cliente" placeholder="Juan Pérez" required />
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Contacto</label>
-                    <input type="text" className="form-control" name="contacto" placeholder="+56 9 1234 5678" required />
+                    <input type="text" className="form-control" name="contacto_cliente" placeholder="+56 9 1234 5678" required />
                 </div>
                 <div className="d-flex justify-content-end gap-2">
                     <button type="submit" className="btn btn-success">

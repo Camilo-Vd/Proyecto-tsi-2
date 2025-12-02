@@ -5,7 +5,6 @@ import ClienteFila from "../components/ClienteFila";
 import { clienteEliminar, getClientes } from "../service/ClienteService";
 
 export async function loader() {
-    // Aquí puedes llamar a una función para obtener los datos de los clientes
     const clientes = await getClientes();
     return clientes; // Cambia esto para devolver los datos reales
 }
@@ -13,24 +12,25 @@ export async function loader() {
 export async function action({ request }: { request: Request }) {
     const formData = Object.fromEntries(await request.formData());
     const rut = String(formData.rut_cliente || "");
+    console.log("Eliminando cliente con RUT:", formData.rut_cliente);
     try {
         await clienteEliminar(rut);
         return null;
     } catch (error) {
-        console.error("Error en action eliminar cliente:", error);
+        console.error("Error en eliminar cliente:", error);
         return { error: true, message: "No se pudo eliminar el cliente" };
     }
 }
 
 export default function Clientes() {
-    const clientes = useLoaderData() as Cliente[];
+    const clientes = (useLoaderData() as Cliente[]) || [];
     const [busqueda, setBusqueda] = useState("");
 
     // Filtra los clientes por RUT o nombre si hay búsqueda
     const clientesFiltrados = busqueda.trim()
         ? clientes.filter(cliente =>
-            cliente.rut_cliente.toLowerCase().includes(busqueda.trim().toLowerCase()) ||
-            cliente.nombre.toLowerCase().includes(busqueda.trim().toLowerCase())
+            String(cliente.rut_cliente).toLowerCase().includes(busqueda.trim().toLowerCase()) ||
+            String(cliente.nombre_cliente).toLowerCase().includes(busqueda.trim().toLowerCase())
         )
         : clientes;
 

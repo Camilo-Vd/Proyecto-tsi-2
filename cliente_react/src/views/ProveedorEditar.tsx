@@ -43,15 +43,15 @@ export default function ProveedorEditar() {
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Nombre del proveedor</label>
-                    <input type="text" className="form-control" name="nombre" placeholder="Ej: Proveedor S.A." required />
+                    <input type="text" className="form-control" name="nombre_proveedor" placeholder="Ej: Proveedor S.A." required />
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Teléfono</label>
-                    <input type="text" className="form-control" name="contacto" placeholder="Ej: +56 9 1234 5678" required />
+                    <input type="text" className="form-control" name="contacto_proveedor" placeholder="Ej: +56 9 1234 5678" required />
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Dirección</label>
-                    <input type="text" className="form-control" name="direccion" placeholder="Ej: Av. Ejemplo 123, Santiago" required />
+                    <input type="text" className="form-control" name="direccion_proveedor" placeholder="Ej: Av. Ejemplo 123, Santiago" required />
                 </div>
                 <div className="d-flex justify-content-end gap-2">
                     <button type="submit" className="btn btn-success">

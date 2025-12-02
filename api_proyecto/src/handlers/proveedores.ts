@@ -1,11 +1,12 @@
 import { request, Request, Response } from "express";
 import Proveedor from "../models/Proveedor";
+import { procesarRUTBackend } from "../utils/rutUtils";
 
 
 
 export const obtenerProveedores = async (request: Request, response: Response) => {
     try {
-        const proveedores = await Proveedor.findAll()
+        const proveedores = await Proveedor.findAll();
         response.status(200).json(proveedores)
     }
     catch (error) {
@@ -22,7 +23,13 @@ export const obtenerProveedoresPorRut = async (request: Request, response: Respo
             return response.status(400).json({ message: 'El RUT es obligatorio' });
         }
 
-        const proveedor = await Proveedor.findByPk(rut);
+        // Validar y procesar el RUT del parámetro
+        const rutValidacion = procesarRUTBackend(rut);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error })
+        }
+
+        const proveedor = await Proveedor.findByPk(rutValidacion.rut);
 
         if (!proveedor) {
             return response.status(404).json({ message: 'Proveedor no encontrado' });
@@ -39,25 +46,31 @@ export const obtenerProveedoresPorRut = async (request: Request, response: Respo
 
 export const crearProveedor = async (request: Request, response: Response) => {
     try {
-        const { rut_proveedor, nombre, contacto, direccion } = request.body;
+        const { rut_proveedor, nombre_proveedor, contacto_proveedor, direccion_proveedor } = request.body;
 
         // Validación de campos obligatorios
-        if (!rut_proveedor || !nombre || !contacto || !direccion) {
+        if (!rut_proveedor || !nombre_proveedor || !contacto_proveedor || !direccion_proveedor) {
             return response.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
 
-        // Verificar si el proveedor ya existe
-        const proveedorExistente = await Proveedor.findByPk(rut_proveedor);
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_proveedor);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error })
+        }
+
+        // Verificar si el proveedor ya existe (usando RUT numérico validado)
+        const proveedorExistente = await Proveedor.findByPk(rutValidacion.rut);
         if (proveedorExistente) {
             return response.status(409).json({ message: 'El proveedor con este RUT ya existe' });
         }
 
         // Crear el proveedor
         const nuevoProveedor = await Proveedor.create({
-            rut_proveedor,
-            nombre,
-            contacto,
-            direccion
+            rut_proveedor: rutValidacion.rut,  // Usar el RUT numérico validado
+            nombre_proveedor,
+            contacto_proveedor,
+            direccion_proveedor
         });
 
         response.status(201).json({ message: 'Proveedor creado exitosamente', proveedor: nuevoProveedor });
@@ -71,23 +84,29 @@ export const crearProveedor = async (request: Request, response: Response) => {
 
 export const actualizarProveedor = async (request: Request, response: Response) => {
     try {
-        const { rut_proveedor, contacto, direccion, nombre } = request.body;
+        const { rut_proveedor, nombre_proveedor, contacto_proveedor, direccion_proveedor } = request.body;
 
         // Validación de campos obligatorios
-        if (!rut_proveedor || (!contacto && !direccion && !nombre)) {
-            return response.status(400).json({ message: 'RUT y al menos un campo a modificar (nombre, contacto o dirección) son obligatorios' });
+        if (!rut_proveedor || (!contacto_proveedor && !direccion_proveedor && !nombre_proveedor)) {
+            return response.status(400).json({ message: 'RUT y al menos un campo a modificar (nombre_proveedor, contacto o dirección) son obligatorios' });
         }
 
-        // Buscar el proveedor por su RUT
-        const proveedor = await Proveedor.findByPk(rut_proveedor);
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_proveedor);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error })
+        }
+
+        // Buscar el proveedor por su RUT (usando RUT numérico validado)
+        const proveedor = await Proveedor.findByPk(rutValidacion.rut);
         if (!proveedor) {
             return response.status(404).json({ message: 'Proveedor no encontrado' });
         }
 
         // Actualizar los campos
-        if (contacto) proveedor.contacto = contacto;
-        if (direccion) proveedor.direccion = direccion;
-        if (nombre) proveedor.nombre = nombre;
+        if (contacto_proveedor) proveedor.contacto_proveedor = contacto_proveedor;
+        if (direccion_proveedor) proveedor.direccion_proveedor = direccion_proveedor;
+        if (nombre_proveedor) proveedor.nombre_proveedor = nombre_proveedor;
         await proveedor.save();
 
         response.status(200).json({ message: 'Proveedor actualizado exitosamente', proveedor });
@@ -109,8 +128,14 @@ export const eliminarProveedor = async (request: Request, response: Response) =>
             return response.status(400).json({ message: 'El RUT del proveedor es obligatorio' });
         }
 
-        // Buscar el proveedor por su RUT
-        const proveedor = await Proveedor.findByPk(rut_proveedor);
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_proveedor);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error })
+        }
+
+        // Buscar el proveedor por su RUT (usando RUT numérico validado)
+        const proveedor = await Proveedor.findByPk(rutValidacion.rut);
         if (!proveedor) {
             return response.status(404).json({ message: 'Proveedor no encontrado' });
         }

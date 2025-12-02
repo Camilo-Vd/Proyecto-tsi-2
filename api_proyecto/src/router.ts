@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 
 import {
     login,
@@ -6,44 +6,68 @@ import {
     cambiarContraseña,
     logout
 } from "./handlers/usuarios"
-import { actualizarContactoCliente, crearCliente, elimnarCliente, obtenerClientePorRut, obtenerClientes } from './handlers/clientes';
+import { actualizarContactoCliente, crearCliente, eliminarCliente, obtenerClientePorRut, obtenerClientes } from './handlers/clientes';
 import { actualizarProveedor, crearProveedor, eliminarProveedor, obtenerProveedores, obtenerProveedoresPorRut } from './handlers/proveedores';
 import { agregarInventario, editarInventario, eliminarInventario, obtenerInventarios } from './handlers/inventarios';
 import { agregarVenta, imprimirVenta, obtenerVentas } from './handlers/ventas';
+import { productosDisponibles, productosBajoStock, productosAgotados } from './handlers/reportes';
+import { obtenerProductos, obtenerTallas } from './handlers/productos';
+import { obtenerCompras, crearCompra, editarCompra, eliminarCompra } from './handlers/compras';
 
 
 const router = Router();
 
-router.post('/usuarios/login',login)//para el iniciar sesion
+// Usuarios
+router.post('/usuarios/login', login)
+router.post('/usuarios', crearUsuario)
+router.post('/usuarios/salir', logout)
+router.put('/usuarios/cambiar-contrasena', cambiarContraseña)
 
 
-
-router.post('/usuarios', crearUsuario) // para crear un usuario
-router.post('/usuarios/salir', logout) // para cerrar sesion
-router.put('/usuarios/cambiar-contrasena', cambiarContraseña) // para cambiar la contraseña
-
-router.get('/clientes', obtenerClientes) //para obtener todos los clientes
-router.get('/clientes/:rut_cliente',obtenerClientePorRut) //para obtener clientes por el rut
-router.post('/clientes/crear', crearCliente) //para crear un cliente
-router.put('/clientes/actualizar', actualizarContactoCliente) //para actualizar el contacto de un cliente
-router.delete('/clientes/eliminar/:rut_cliente', elimnarCliente) //para eliminar un cliente
+// Clientes
+router.get('/clientes', obtenerClientes)
+router.get('/clientes/:rut_cliente', obtenerClientePorRut)
+router.post('/clientes/crear', crearCliente)
+router.put('/clientes/actualizar', actualizarContactoCliente)
+router.delete('/clientes/eliminar/:rut_cliente', eliminarCliente)
 
 
-router.get('/proveedores', obtenerProveedores) //para obtener todos los proveedores
-router.get('/proveedores/:rut', obtenerProveedoresPorRut) //para obtener proveedores por el rut
-router.post('/proveedores/crear', crearProveedor) //para crear un proveedor
-router.put('/proveedores/actualizar', actualizarProveedor) //para modificar el proveedor
-router.delete('/proveedores/eliminar/:rut_proveedor', eliminarProveedor) //para eliminar un provedor
+// Proveedores
+router.get('/proveedores', obtenerProveedores)
+router.get('/proveedores/:rut', obtenerProveedoresPorRut)
+router.post('/proveedores/crear', crearProveedor)
+router.put('/proveedores/actualizar', actualizarProveedor)
+router.delete('/proveedores/eliminar/:rut_proveedor', eliminarProveedor)
 
 
-router.get('/inventario', obtenerInventarios) //para obtener el inventario
-router.post('/inventario/crear', agregarInventario) //para agregar al inventario
-router.put('/inventario/:id_producto/:id_talla', editarInventario) //para editar el inventario
-router.delete('/inventario/:id_producto/:id_talla', eliminarInventario) //para eliminar del inventario
+// Inventario
+router.get('/inventario', obtenerInventarios)
+router.post('/inventario/crear', agregarInventario)
+router.put('/inventario/:id_producto/:id_talla', editarInventario)
+router.delete('/inventario/:id_producto/:id_talla', eliminarInventario)
 
 
-router.get('/ventas', obtenerVentas) //para obtener las ventas
-router.post('/ventas/crear', agregarVenta) //para agregar una venta
-router.get('/ventas/imprimir/:id_venta', imprimirVenta) //para imprimir una venta
+// Ventas
+router.get('/ventas', obtenerVentas)
+router.post('/ventas/crear', agregarVenta)
+router.get('/ventas/imprimir/:id_venta', imprimirVenta)
 
-export default router 
+
+// Compras
+router.get('/compras', obtenerCompras)
+router.post('/compras/crear', crearCompra)
+router.put('/compras/:id', editarCompra)
+router.delete('/compras/:id', eliminarCompra)
+
+
+// Productos y Tallas
+router.get('/productos', obtenerProductos)
+router.get('/tallas', obtenerTallas)
+
+
+// Reportes
+router.get('/reportes/disponibles', productosDisponibles)
+router.get('/reportes/bajo-stock', productosBajoStock)
+router.get('/reportes/agotados', productosAgotados)
+
+export default router

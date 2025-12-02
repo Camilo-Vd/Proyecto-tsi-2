@@ -33,11 +33,11 @@ export default function ClientesEditar() {
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Nombre del cliente</label>
-                    <input type="text" className="form-control" name="nombre" placeholder="Juan Pérez"/>
+                    <input type="text" className="form-control" name="nombre_cliente" placeholder="Juan Pérez"/>
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Teléfono</label>
-                    <input type="text" className="form-control" name="contacto" placeholder="+56 9 1234 5678"/>
+                    <input type="text" className="form-control" name="contacto_cliente" placeholder="+56 9 1234 5678"/>
                 </div>
                 <div className="d-flex justify-content-end gap-2">
                     <button type="submit" className="btn btn-success">
