@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 
 export const cambiarContrasenaConfiguracion = async (request: Request, response: Response) => {
     try {
-        const rut_usuario = request.user.rut_usuario;
+        const rut_usuario = (request as any).user?.rut_usuario;
         const { password_actual, password_nueva } = request.body;
 
         // Validar campos
@@ -40,3 +40,5 @@ export const cambiarContrasenaConfiguracion = async (request: Request, response:
         return response.status(500).json({ message: "Error interno del servidor" });
     }
 };
+
+

@@ -10,39 +10,55 @@ import Proveedor from "../models/Proveedor";
 export const obtenerInventarios = async (request: Request, response: Response) => {
     try {
         const inventario = await Inventario.findAll({
-            attributes: ['stock_actual'],
+            attributes: ['id_producto', 'id_talla', 'stock_actual', 'precio_unitario'],
             include: [
                 {
                     model: Producto,
-                    attributes: ['id_producto', 'nombre_producto', 'precio_unitario'],
+                    attributes: ['id_producto', 'nombre_producto'],
                     include: [
-                        { model: Categoria, attributes: ['nombre_categoria'] },
-                        { model: Proveedor, attributes: ['nombre'] } // solo si el producto tiene proveedor
+                        { model: Categoria, attributes: ['id_categoria', 'nombre_categoria'] },
+                        { model: Proveedor, attributes: ['rut_proveedor', 'nombre_proveedor'] } // solo si el producto tiene proveedor   
                     ]
                 },
                 {
                     model: Talla,
-                    attributes: ['nombre_talla']
+                    attributes: ['id_talla', 'nombre_talla']
                 }
             ]
         });
 
         //Transformar datos a un formato limpio para el frontend
         const resultado = inventario.map((item: any) => ({
-            id_producto: item.Producto?.id_producto,
-            nombre_producto: item.Producto?.nombre_producto,
-            nombre_categoria: item.Producto?.Categoria?.nombre_categoria,
-            nombre_talla: item.Talla?.nombre_talla,
-            nombre_proveedor: item.Producto?.Proveedor?.nombre || '—',
-            precio_unitario: item.Producto?.precio_unitario,
+            // IDs principales (claves primarias compuestas del inventario)
+            id_producto: item.id_producto,
+            id_talla: item.id_talla,
+            
+            // Información del producto
+            nombre_producto: item.Producto?.nombre_producto || 'N/A',
+            id_categoria: item.Producto?.Categoria?.id_categoria,
+            nombre_categoria: item.Producto?.Categoria?.nombre_categoria || 'Sin categoría',
+            
+            // Información del proveedor (puede ser null)
+            rut_proveedor: item.Producto?.Proveedor?.rut_proveedor || null,
+            nombre_proveedor: item.Producto?.Proveedor?.nombre_proveedor || 'Sin proveedor',
+            
+            // Información de talla
+            nombre_talla: item.Talla?.nombre_talla || 'N/A',
+            
+            // Datos del inventario
+            precio_unitario: item.precio_unitario,
             stock_actual: item.stock_actual
         }));
 
-        response.status(200).json(resultado);
+        response.status(200).json({
+            message: "Inventarios obtenidos correctamente",
+            total_registros: resultado.length,
+            inventarios: resultado
+        });
 
     } catch (error) {
-        console.error("error al obtner el inventario:", error)
-        response.status(500).json({ message: "error en el servidor" })
+        console.error("Error al obtener el inventario:", error)
+        response.status(500).json({ message: "Error en el servidor" })
     }
 }
 
@@ -73,14 +89,14 @@ export const editarInventario = async (request: Request, response: Response) => 
         // Retornar inventario actualizado con datos completos
         const actualizado = await Inventario.findOne({
             where: { id_producto, id_talla },
-            attributes: ['stock_actual'],
+            attributes: ['stock_actual', 'precio_unitario'],
             include: [
                 {
                     model: Producto,
-                    attributes: ['id_producto', 'nombre_producto', 'precio_unitario'],
+                    attributes: ['id_producto', 'nombre_producto'],
                     include: [
                         { model: Categoria, attributes: ['nombre_categoria'] },
-                        { model: Proveedor, attributes: ['nombre'] }
+                        { model: Proveedor, attributes: ['nombre_proveedor'] }
                     ]
                 },
                 {
@@ -162,11 +178,11 @@ export const agregarInventario = async (request: Request, response: Response) =>
 
         const inventarioCreado = await Inventario.findOne({
             where: { id_producto, id_talla },
-            attributes: ['stock_actual'],
+            attributes: ['stock_actual', 'precio_unitario'],
             include: [
                 {
                     model: Producto,
-                    attributes: ['id_producto', 'nombre_producto', 'precio_unitario'],
+                    attributes: ['id_producto', 'nombre_producto'],
                     include: [
                         {
                             model: Categoria,
@@ -174,7 +190,7 @@ export const agregarInventario = async (request: Request, response: Response) =>
                         },
                         {
                             model: Proveedor,
-                            attributes: ['nombre']
+                            attributes: ['nombre_proveedor']
                         }
                     ]
                 },

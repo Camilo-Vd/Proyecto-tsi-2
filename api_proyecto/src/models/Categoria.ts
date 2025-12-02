@@ -15,6 +15,9 @@ class Categoria extends Model {
         allowNull: false
     })
     declare nombre_categoria: string;
+
+    
+    
 }
 
 export default Categoria;

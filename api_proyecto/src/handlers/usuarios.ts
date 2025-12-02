@@ -2,13 +2,14 @@ import { Request, Response } from "express"
 import bcrypt from "bcryptjs"
 import Jwt from "jsonwebtoken"
 import Usuario from "../models/Usuario" // Ajusta la ruta según la ubicación real del modelo
+import { procesarRUTBackend } from "../utils/rutUtils"
 
 
 //para el acceso al modelo de usuario para interactuar con  la tabla 
 // const Usuario = db.Usuario
 
 //clave secreta para firmar los tokens 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret_key'
+const JWT_SECRET = process.env.SECRET_KEY || process.env.JWT_SECRET || 'secret_key'
 
 //1 manejador para inicio de sesion 
 // endpoint: POST /api/usuarios/login
@@ -21,8 +22,14 @@ export const login = async (request: Request, response: Response) => {
             return response.status(400).json({ message: "rut_usuario y contraseña son obligatorios" })
         }
 
-        // Buscar el usuario por rut_usuario
-        const usuario = await Usuario.findByPk(rut_usuario);
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_usuario);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error })
+        }
+
+        // Buscar el usuario por rut_usuario (ya validado y convertido a número)
+        const usuario = await Usuario.findByPk(rutValidacion.rut);
 
         if (!usuario) {
             return response.status(401).json({ message: "credenciales incorrectas (usuario o contraseña)" })
@@ -36,7 +43,7 @@ export const login = async (request: Request, response: Response) => {
 
         // Si las credenciales son válidas, generamos un token JWT
         const token = Jwt.sign(
-            { rut_usuario: usuario.rut_usuario, rol: usuario.rol },
+            { rut_usuario: usuario.rut_usuario, rol: usuario.rol_usuario },
             JWT_SECRET,
             { expiresIn: '1h' }
         )
@@ -55,11 +62,17 @@ export const login = async (request: Request, response: Response) => {
 // endpoint: POST /api/usuarios
 export const crearUsuario = async (request: Request, response: Response) => {
     try {
-        const { rut_usuario, nombre_usuario, contraseña, rol } = request.body
+        const { rut_usuario, nombre_usuario, contraseña, rol_usuario } = request.body
 
-        //validacion para email y contraseña no sean vacias
-        if (!rut_usuario || !nombre_usuario || !contraseña || !rol) {
+        //validacion para campos obligatorios
+        if (!rut_usuario || !nombre_usuario || !contraseña || !rol_usuario) {
             return response.status(400).json({ message: 'rut, nombre, contraseña y rol son obligatorios' })
+        }
+
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_usuario);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error })
         }
 
         //validar que la contraseña tenga al menos 6 caracteres
@@ -67,8 +80,8 @@ export const crearUsuario = async (request: Request, response: Response) => {
             return response.status(400).json({ message: 'la contraseña debe tener al menos 6 caracteres' })
         }
 
-        //verificar si el rut ya existe
-        const usuarioExiste = await Usuario.findByPk(rut_usuario)
+        //verificar si el rut ya existe (usando el RUT numérico validado)
+        const usuarioExiste = await Usuario.findByPk(rutValidacion.rut)
         if (usuarioExiste) {
             return response.status(409).json({ message: 'el rut ya existe' })
         }
@@ -84,10 +97,10 @@ export const crearUsuario = async (request: Request, response: Response) => {
 
         //crea el nuevo usuario en la base de datos
         await Usuario.create({
-            rut_usuario,
+            rut_usuario: rutValidacion.rut,  // Usar el RUT numérico validado
             nombre_usuario,
             contraseña: hasheoPassword,
-            rol
+            rol_usuario
         })
 
         response.status(201).json({ message: 'usuario creado exitosamente' })
@@ -109,12 +122,18 @@ export const cambiarContraseña = async (request: Request, response: Response) =
             return response.status(400).json({ message: 'todos los campos son obligatorios ' })
         }
 
-        //minimo de caracteres en la contraseña nueva al ser creada 
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_usuario);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error })
+        }
+
+        //minimo de caracteres en la contraseña nueva al ser creada
         if (nuevaContraseña.length < 6) {
             return response.status(400).json({ message: 'la nueva contraseña debe tener 6 caracteres minimo' })
         }
 
-        const usuario = await Usuario.findByPk(rut_usuario)
+        const usuario = await Usuario.findByPk(rutValidacion.rut)
         //validacion si existe el usuario con ese email
         if (!usuario) {
             return response.status(404).json({ message: 'usuario no encontrado' })

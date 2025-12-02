@@ -28,9 +28,9 @@ export const productosDisponibles = async (request: Request, response: Response)
         }
 
         const resultado = productos.map(item => ({
-            codigo: item.Producto.id_producto,
-            nombre: item.Producto.nombre_producto,
-            categoria: item.Producto.Categoria.nombre_categoria,
+            codigo: (item as any).producto.id_producto,
+            nombre: (item as any).producto.nombre_producto,
+            categoria: (item as any).producto.Categoria.nombre_categoria,
             stock: item.stock_actual
 
         }));
@@ -62,8 +62,8 @@ export const productosBajoStock = async (request: Request, response: Response) =
         }
 
         const resultado = productos.map(item => ({
-            codigo: item.Producto.id_producto,
-            nomnbre: item.Producto.nombre_producto,
+            codigo: (item as any).producto.id_producto,
+            nomnbre: (item as any).producto.nombre_producto,
             stock: item.stock_actual,
         }));
 
@@ -95,8 +95,8 @@ export const productosAgotados = async (request: Request, response: Response) =>
         }
 
         const resultado = productos.map(item => ({
-            codigo: item.Producto.id_producto,
-            nombre: item.Producto.nombre_producto,
+            codigo: (item as any).producto.id_producto,
+            nombre: (item as any).producto.nombre_producto,
         }))
 
         response.status(200).json(resultado);

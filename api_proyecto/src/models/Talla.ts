@@ -11,10 +11,11 @@ class Talla extends Model {
     declare id_talla: number;
 
     @Column({
-        type: DataType.STRING(5),
+        type: DataType.STRING(10),
         allowNull: false
     })
     declare nombre_talla: string;
+
 }
 
 export default Talla;

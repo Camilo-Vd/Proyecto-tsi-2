@@ -1,17 +1,23 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import server from "./server";
-import "express-serve-static-core";
 
-server.listen(3000,()=>{
-    console.log('Inicio API Express')
-})
+const PORT = process.env.PORT || 3000;
+console.log('DEBUG: process.env.PORT =', process.env.PORT);
 
+// Iniciar el servidor y manejar errores de arranque (p.ej. EADDRINUSE)
+const appServer = server.listen(PORT, () => {
+    console.log(`Servidor corriendo en puerto ${PORT}`);
+    console.log(`API disponible en: http://localhost:${PORT}`);
+});
 
-
-declare module "express-serve-static-core" {
-    interface Request {
-        user?: {
-            rut_usuario: string;
-            rol?: string;
-        };
+appServer.on('error', (error: any) => {
+    if (error && (error.code === 'EADDRINUSE' || error.errno === 'EADDRINUSE')) {
+        console.error(`Error: el puerto ${PORT} ya está en uso. Detén la otra instancia o cambia PORT en el archivo .env.`);
+        process.exit(1);
+    } else {
+        console.error('Error al iniciar el servidor:', error);
+        process.exit(1);
     }
-}
+});
