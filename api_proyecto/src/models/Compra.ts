@@ -1,5 +1,6 @@
-import { Column, Table, Model, DataType, ForeignKey, BelongsTo } from "sequelize-typescript";
+import { Column, Table, Model, DataType, ForeignKey, BelongsTo, HasMany } from "sequelize-typescript";
 import Proveedor from "./Proveedor";
+import Detalle_compra from "./Detalle_compra";
 
 @Table({ tableName: 'compras' })
 class Compra extends Model {
@@ -30,6 +31,16 @@ class Compra extends Model {
     })
     declare rut_proveedor: number;
 
+    @Column({
+        type: DataType.ENUM('registrada', 'anulada'),
+        defaultValue: 'registrada',
+        allowNull: false
+    })
+    declare estado_compra: 'registrada' | 'anulada';
+
     @BelongsTo(() => Proveedor)
     declare proveedor: Proveedor;
+
+    @HasMany(() => Detalle_compra)
+    declare detalles: Detalle_compra[];
 }export default Compra;

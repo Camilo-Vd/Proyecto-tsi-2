@@ -1,73 +1,78 @@
-import axios from "./axiosInstance";
-import { AxiosError } from "axios";
+import axiosInstance from "./axiosInstance";
 import { safeParse } from "valibot";
 import { InventariosSchema } from "../types/inventario";
+import { handleAxiosError, extractArrayResponse, ApiResponse } from "../utils/apiErrorHandler";
 
 type FormData = {
     [k: string]: any;
 }
 
-export async function getInventarios() {
+export async function getInventarios(): Promise<ApiResponse<any[]>> {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/inventario`;
-        const { data: inventarios } = await axios.get(url);
+        const { data: response } = await axiosInstance.get("/inventario");
+        
+        const inventarios = extractArrayResponse(response);
         const resultado = safeParse(InventariosSchema, inventarios);
+        
         if (resultado.success) {
-            return resultado.output;
-        } else {
-            throw new Error("Error de validación de datos");
+            return { success: true, data: resultado.output };
         }
+
+        console.error("Error de validación:", resultado.issues);
+        if (inventarios.length > 0) {
+            return { success: true, data: inventarios };
+        }
+
+        return { success: true, data: [] };
     } catch (error) {
-        console.log(error);
-        return [];
+        return handleAxiosError(error, "Error al obtener inventario");
     }
 }
 
-export async function agregarInventario(formData: FormData) {
+export async function agregarInventario(formData: FormData): Promise<ApiResponse<any>> {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/inventario/crear`;
-        await axios.post(url, {
+        const { data } = await axiosInstance.post("/inventario/crear", {
             id_producto: parseInt(formData.id_producto),
             id_talla: parseInt(formData.id_talla),
             precio_unitario: parseInt(formData.precio_unitario),
-            stock_actual: parseInt(formData.stock_actual)
+            stock_actual: parseInt(formData.stock_actual),
+            stock_critico: parseInt(formData.stock_critico)
         });
-        return { success: true };
+
+        return { success: true, data };
     } catch (error) {
-        if (error instanceof AxiosError) {
-            if (error.response?.status === 409) {
-                return { success: false, error: "Este producto con talla ya existe en el inventario" };
-            }
-            if (error.response?.status === 400) {
-                return { success: false, error: "Todos los campos son obligatorios" };
-            }
-            if (error.response?.data?.message) {
-                return { success: false, error: error.response.data.message };
-            }
+        return handleAxiosError(error, "Error al agregar al inventario");
+    }
+}
+
+export async function editarInventario(
+    id_producto: number,
+    id_talla: number,
+    stock_actual: number,
+    precio_unitario?: number,
+    stock_critico?: number
+): Promise<ApiResponse<any>> {
+    try {
+        const payload: any = { stock_actual };
+        if (precio_unitario !== undefined) {
+            payload.precio_unitario = precio_unitario;
         }
-        return { success: false, error: "Error al agregar al inventario" };
+        if (stock_critico !== undefined) {
+            payload.stock_critico = stock_critico;
+        }
+
+        const { data } = await axiosInstance.put(`/inventario/${id_producto}/${id_talla}`, payload);
+        return { success: true, data };
+    } catch (error) {
+        return handleAxiosError(error, "Error al editar inventario");
     }
 }
 
-export async function editarInventario(id_producto: number, id_talla: number, formData: FormData) {
+export async function eliminarInventario(id_producto: number, id_talla: number): Promise<ApiResponse<any>> {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/inventario/${id_producto}/${id_talla}`;
-        await axios.put(url, {
-            precio_unitario: parseInt(formData.precio_unitario),
-            stock_actual: parseInt(formData.stock_actual)
-        });
-        return { success: true };
+        const { data } = await axiosInstance.delete(`/inventario/${id_producto}/${id_talla}`);
+        return { success: true, data };
     } catch (error) {
-        return { success: false, error: "Error al editar inventario" };
-    }
-}
-
-export async function eliminarInventario(id_producto: number, id_talla: number) {
-    try {
-        const url = `${import.meta.env.VITE_API_URL}/inventario/${id_producto}/${id_talla}`;
-        await axios.delete(url);
-        return { success: true };
-    } catch (error) {
-        return { success: false, error: "Error al eliminar del inventario" };
+        return handleAxiosError(error, "Error al eliminar del inventario");
     }
 }

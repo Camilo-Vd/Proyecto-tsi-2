@@ -1,13 +1,40 @@
-import { request, Request, Response } from "express";
+import { Request, Response } from "express";
 import Proveedor from "../models/Proveedor";
+import Compra from "../models/Compra";
 import { procesarRUTBackend } from "../utils/rutUtils";
 
 
 
 export const obtenerProveedores = async (request: Request, response: Response) => {
     try {
-        const proveedores = await Proveedor.findAll();
-        response.status(200).json(proveedores)
+        // Obtener el filtro del query parameter (activos, inactivos, todos)
+        const filtro = (request.query.filtro as string) || 'activos';
+        
+        let where: any = {};
+        
+        if (filtro === 'activos') {
+            where.estado_proveedor = 'activo';
+        } else if (filtro === 'inactivos') {
+            where.estado_proveedor = 'inactivo';
+        }
+        // Si es 'todos', no agregamos filtro (retorna todos)
+        
+        const proveedores = await Proveedor.findAll({ where });
+        
+        // Agregar cantidad de compras a cada proveedor
+        const proveedoresConCompras = await Promise.all(
+            proveedores.map(async (proveedor) => {
+                const cantidadCompras = await Compra.count({
+                    where: { rut_proveedor: proveedor.getDataValue('rut_proveedor') }
+                });
+                return {
+                    ...proveedor.toJSON(),
+                    cantidad_compras: cantidadCompras
+                };
+            })
+        );
+        
+        response.status(200).json(proveedoresConCompras)
     }
     catch (error) {
         console.error("error al obtener proveedores:", error)
@@ -140,14 +167,50 @@ export const eliminarProveedor = async (request: Request, response: Response) =>
             return response.status(404).json({ message: 'Proveedor no encontrado' });
         }
 
-        // Eliminar el proveedor
-        await proveedor.destroy();
+        // Deshabilitar el proveedor (soft delete)
+        await proveedor.update({ estado_proveedor: 'inactivo' });
 
-        response.status(200).json({ message: "proveedor eliminado exitosamente" })
+        response.status(200).json({ message: "proveedor deshabilitado exitosamente" })
 
     }
     catch (error) {
         console.error("error al eliminar proveedor:", error)
+        response.status(500).json({ message: "error en el servidor" })
+    }
+}
+
+// Alias semántico: tanto DELETE como PUT deshabilitar hacen soft delete
+export const deshabilitarProveedor = eliminarProveedor;
+
+export const reactivarProveedor = async (request: Request, response: Response) => {
+    try {
+        const { rut_proveedor } = request.params;
+
+        // Validación de campo obligatorio
+        if (!rut_proveedor) {
+            return response.status(400).json({ message: 'El RUT del proveedor es obligatorio' });
+        }
+
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_proveedor);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error })
+        }
+
+        // Buscar el proveedor por su RUT (usando RUT numérico validado)
+        const proveedor = await Proveedor.findByPk(rutValidacion.rut);
+        if (!proveedor) {
+            return response.status(404).json({ message: 'Proveedor no encontrado' });
+        }
+
+        // Reactivar el proveedor
+        await proveedor.update({ estado_proveedor: 'activo' });
+
+        response.status(200).json({ message: "proveedor reactivado exitosamente" })
+
+    }
+    catch (error) {
+        console.error("error al reactivar proveedor:", error)
         response.status(500).json({ message: "error en el servidor" })
     }
 }

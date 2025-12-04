@@ -86,6 +86,39 @@ export function formatearRUT(rut: number): string {
     return `${rutFormateado}-${dv}`;
 }
 
+export function formatearRUTFlexible(rut: string | number): string {
+    try {
+        // Convertir a string y limpiar
+        let rutStr = String(rut).trim();
+        
+        // Si ya está formateado (tiene puntos y guión), retornarlo tal cual
+        if (rutStr.includes('.') && rutStr.includes('-')) {
+            return rutStr;
+        }
+        
+        // Si es solo números, formatearlo
+        const soloNumeros = rutStr.replace(/[^0-9kK]/gi, '');
+        
+        if (soloNumeros.length < 2) {
+            return rutStr;
+        }
+        
+        // Convertir a número para formateo
+        const rutNumero = parseInt(soloNumeros, 10);
+        
+        if (isNaN(rutNumero) || rutNumero <= 0 || rutNumero > 99999999) {
+            return rutStr;
+        }
+        
+        // Calcular DV y formatear
+        const dv = calcularDigitoVerificador(rutNumero);
+        const rutFormateado = rutNumero.toLocaleString('es-CL');
+        return `${rutFormateado}-${dv}`;
+    } catch (error) {
+        return String(rut);
+    }
+}
+
 export function formatearRUTInput(valor: string): string {
     if (!valor) return '';
 
@@ -94,7 +127,7 @@ export function formatearRUTInput(valor: string): string {
     
     if (rutLimpio.length === 0) return '';
     
-    // Separar el dígito verificador
+    // Separar el dígito verificador (último carácter)
     const cuerpo = rutLimpio.slice(0, -1);
     const dv = rutLimpio.slice(-1);
     
@@ -116,7 +149,6 @@ export function formatearRUTInput(valor: string): string {
     
     return cuerpoFormateado;
 }
-
 
 export function rutANumero(rutFormateado: string): number {
     const { rut } = parsearRUT(rutFormateado);

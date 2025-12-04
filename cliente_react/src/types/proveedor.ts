@@ -1,4 +1,4 @@
-import { array, object, string, nonEmpty, pipe, type InferOutput, check } from "valibot";
+import { array, object, string, nonEmpty, pipe, type InferOutput, check, number } from "valibot";
 import { validarRUT } from "../utils/rutUtils";
 
 export const ProveedorSchema = object({
@@ -31,9 +31,11 @@ export const ProveedorServerSchema = object({
     nombre_proveedor: string(),
     contacto_proveedor: string(),
     direccion_proveedor: string(),
+    cantidad_compras: number(),
+    estado_proveedor: string(),
 });
 
 export const ProveedoresServerSchema = array(ProveedorServerSchema);
 
-export type Proveedor = InferOutput<typeof ProveedorSchema>;
+export type Proveedor = InferOutput<typeof ProveedorServerSchema>;
 export type ProveedorServer = InferOutput<typeof ProveedorServerSchema>;

@@ -1,9 +1,13 @@
 import { Outlet, useNavigation } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import Loader from "../components/Loader";
+import { useTokenValidation } from "../hooks/useTokenValidation";
 
 export default function Layout(){
     const navigation = useNavigation();
+    
+    // Validar token periódicamente
+    useTokenValidation();
     
     return(
         <>

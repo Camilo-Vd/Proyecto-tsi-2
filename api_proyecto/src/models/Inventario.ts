@@ -36,10 +36,18 @@ class Inventario extends Model {
     })
     declare stock_actual: number;
 
-    @BelongsTo(() => Producto)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 5,
+        field: 'stock_critico'
+    })
+    declare stock_critico: number;
+
+    @BelongsTo(() => Producto, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
     declare producto: Producto;
 
-    @BelongsTo(() => Talla)
+    @BelongsTo(() => Talla, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
     declare talla: Talla;
 }
 

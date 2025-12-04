@@ -22,6 +22,13 @@ class Cliente extends Model {
     })
     declare contacto_cliente: string;
 
+    @Column({
+        type: DataType.ENUM('activo', 'inactivo'),
+        defaultValue: 'activo',
+        allowNull: false
+    })
+    declare estado_cliente: 'activo' | 'inactivo';
+
     /**
      * Getter para obtener el RUT formateado con dígito verificador
      * @returns RUT formateado (ej: "12.345.678-9")

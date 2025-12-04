@@ -1,15 +1,26 @@
 import { Form, redirect, useActionData, type ActionFunctionArgs } from "react-router-dom";
 import { useState } from "react";
-import { loginUsuario } from "../service/UsuarioServise";
+import { loginUsuario } from "../service/UsuarioService";
 import { formatearRUTInput } from "../utils/rutUtils";
 
 export async function action({ request }: ActionFunctionArgs) {
-    const formData = Object.fromEntries(await request.formData());
-    const resultado = await loginUsuario(formData);
-    if (!resultado.success) {
-        return resultado
+    try {
+        const formData = Object.fromEntries(await request.formData());
+        
+        const resultado = await loginUsuario(formData);
+        
+        if (!resultado.success) {
+            return resultado
+        }
+        
+        return redirect("/");
+    } catch (error) {
+        console.error('❌ Error en action:', error);
+        return {
+            success: false,
+            error: "Error al procesar login"
+        };
     }
-    return redirect("/");
 }
 
 export default function InicioSesion() {
@@ -26,6 +37,8 @@ export default function InicioSesion() {
         setRutFormateado(rutFormateadoNuevo);
     };
 
+    const handleSubmit = () => {};
+
     return (
         <div className="container d-flex align-items-center justify-content-center" style={{ minHeight: "100vh" }}>
             <div className="card p-4 shadow-lg" style={{ maxWidth: 400, width: "100%", borderRadius: "16px" }}>
@@ -36,7 +49,7 @@ export default function InicioSesion() {
                 {actionData?.error && (
                     <div className="alert alert-danger text-center">{actionData.error}</div>
                 )}
-                <Form method="POST">
+                <Form method="POST" onSubmit={handleSubmit}>
                     <div className="mb-3">
                         <label className="form-label">RUT</label>
                         <input 

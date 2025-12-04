@@ -1,89 +1,148 @@
-import axios from "./axiosInstance";
-import { AxiosError } from "axios";
+import axiosInstance from "./axiosInstance";
+import { Compra, ComprasSchema } from "../types/compra";
+import { safeParse } from "valibot";
+import { handleAxiosError, extractArrayResponse, ApiResponse } from "../utils/apiErrorHandler";
 
-export async function getCompras() {
-    try {
-        const url = `${import.meta.env.VITE_API_URL}/compras`;
-        const { data: compras } = await axios.get(url);
-        return compras || [];
-    } catch (error) {
-        console.log(error);
-        return [];
-    }
-}
-
-type DetalleCompra = {
+export interface DetalleCompraPayload {
     id_producto: number;
     id_talla: number;
     cantidad_adquirida: number;
     precio_unitario_compra: number;
 }
 
-export async function crearCompra(rut_proveedor: number, detalles: DetalleCompra[]) {
+export interface CompraCreatePayload {
+    rut_proveedor: string;
+    detalles: DetalleCompraPayload[];
+}
+
+export const obtenerCompras = async (): Promise<ApiResponse<Compra[]>> => {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/compras/crear`;
-        const { data: response } = await axios.post(url, {
-            rut_proveedor: rut_proveedor,
-            detalles: detalles
-        });
-        return { success: true, compraId: response.id_compra };
-    } catch (error) {
-        if (error instanceof AxiosError) {
-            if (error.response?.status === 400) {
-                return { success: false, error: "Datos inválidos para la compra" };
-            }
-            if (error.response?.status === 404) {
-                return { success: false, error: "Proveedor no encontrado" };
-            }
-            if (error.response?.data?.message) {
-                return { success: false, error: error.response.data.message };
-            }
+        const response = await axiosInstance.get("/compras");
+        
+        const comprasData = extractArrayResponse(response.data);
+        const resultado = safeParse(ComprasSchema, comprasData);
+        
+        if (resultado.success) {
+            return { success: true, data: resultado.output };
         }
-        return { success: false, error: "Error al crear la compra" };
-    }
-}
 
-export async function editarCompra(id_compra: number, rut_proveedor: number, detalles: DetalleCompra[]) {
+        console.error("Validación de compras fallida:", resultado.issues);
+        if (comprasData.length > 0) {
+            return { success: true, data: comprasData as Compra[] };
+        }
+
+        return { success: true, data: [] };
+    } catch (error) {
+        return handleAxiosError(error, "Error al obtener compras");
+    }
+};
+
+export const obtenerComprasAnuladas = async (): Promise<ApiResponse<Compra[]>> => {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/compras/${id_compra}`;
-        await axios.put(url, {
-            rut_proveedor: rut_proveedor,
-            detalles: detalles
+        const response = await axiosInstance.get("/compras/anuladas");
+        
+        const comprasData = extractArrayResponse(response.data);
+        const resultado = safeParse(ComprasSchema, comprasData);
+        
+        if (resultado.success) {
+            return { success: true, data: resultado.output };
+        }
+
+        console.error("Validación de compras fallida:", resultado.issues);
+        if (comprasData.length > 0) {
+            return { success: true, data: comprasData as Compra[] };
+        }
+
+        return { success: true, data: [] };
+    } catch (error) {
+        return handleAxiosError(error, "Error al obtener compras anuladas");
+    }
+};
+
+export const obtenerTodasLasCompras = async (): Promise<ApiResponse<Compra[]>> => {
+    try {
+        const response = await axiosInstance.get("/compras/todas");
+        
+        const comprasData = extractArrayResponse(response.data);
+        const resultado = safeParse(ComprasSchema, comprasData);
+        
+        if (resultado.success) {
+            return { success: true, data: resultado.output };
+        }
+
+        console.error("Validación de compras fallida:", resultado.issues);
+        if (comprasData.length > 0) {
+            return { success: true, data: comprasData as Compra[] };
+        }
+
+        return { success: true, data: [] };
+    } catch (error) {
+        return handleAxiosError(error, "Error al obtener todas las compras");
+    }
+};
+
+// Alias para compatibilidad
+export const getCompras = obtenerCompras;
+
+export const crearCompra = async (
+    payload: CompraCreatePayload
+): Promise<ApiResponse<Compra>> => {
+    try {
+        const response = await axiosInstance.post("/compras/crear", payload);
+
+        if (response.data?.compra) {
+            return { success: true, data: response.data.compra };
+        } else if (response.data?.id_compra) {
+            return { success: true, data: response.data };
+        }
+
+        return {
+            success: false,
+            error: "Error al crear la compra",
+            code: "UNKNOWN_ERROR",
+        };
+    } catch (error) {
+        return handleAxiosError(error, "Error al crear la compra");
+    }
+};
+
+export const obtenerComprobanteCompra = async (
+    id_compra: number
+): Promise<ApiResponse<string>> => {
+    try {
+        const response = await axiosInstance.get(`/compras/imprimir/${id_compra}`, {
+            responseType: "blob",
         });
+
+        return { success: true, data: URL.createObjectURL(response.data) };
+    } catch (error) {
+        return handleAxiosError(error, "Error al obtener el comprobante");
+    }
+};
+
+export const editarCompra = async (
+    id_compra: number,
+    payload: CompraCreatePayload
+): Promise<ApiResponse<void>> => {
+    try {
+        await axiosInstance.put(`/compras/${id_compra}`, payload);
         return { success: true };
     } catch (error) {
-        return { success: false, error: "Error al editar la compra" };
+        return handleAxiosError(error, "Error al editar la compra");
     }
-}
+};
 
-export async function eliminarCompra(id_compra: number) {
+export const anularCompra = async (
+    id_compra: number
+): Promise<ApiResponse<void>> => {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/compras/${id_compra}`;
-        await axios.delete(url);
+        await axiosInstance.put(`/compras/${id_compra}/anular`);
         return { success: true };
     } catch (error) {
-        return { success: false, error: "Error al eliminar la compra" };
+        return handleAxiosError(error, "Error al anular la compra");
     }
-}
+};
 
-// Función auxiliar para obtener productos
-export async function getProductos() {
-    try {
-        const url = `${import.meta.env.VITE_API_URL}/inventario`;
-        const { data } = await axios.get(url);
-        return data || [];
-    } catch (error) {
-        return [];
-    }
-}
+// Alias para compatibilidad
+export const eliminarCompra = anularCompra;
 
-// Función auxiliar para obtener tallas
-export async function getTallas() {
-    try {
-        const url = `${import.meta.env.VITE_API_URL}/tallas`;
-        const { data } = await axios.get(url);
-        return data || [];
-    } catch (error) {
-        return [];
-    }
-}

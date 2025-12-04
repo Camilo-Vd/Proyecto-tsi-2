@@ -43,7 +43,7 @@ export const login = async (request: Request, response: Response) => {
 
         // Si las credenciales son válidas, generamos un token JWT
         const token = Jwt.sign(
-            { rut_usuario: usuario.rut_usuario, rol: usuario.rol_usuario },
+            { rut_usuario: usuario.rut_usuario, rol_usuario: usuario.rol_usuario, nombre_usuario: usuario.nombre_usuario },
             JWT_SECRET,
             { expiresIn: '1h' }
         )
@@ -174,3 +174,127 @@ export const logout = async (request: Request, response: Response) => {
     }
 }
 
+//5 manejador para obtener todos los usuarios
+// Endpoint: GET /api/usuarios
+export const obtenerUsuarios = async (request: Request, response: Response) => {
+    try {
+        const usuarios = await Usuario.findAll({
+            attributes: ['rut_usuario', 'nombre_usuario', 'rol_usuario', 'estado_usuario']
+        });
+        response.status(200).json(usuarios);
+    } catch (error) {
+        console.error('error al obtener usuarios:', error);
+        response.status(500).json({ message: 'error en el servidor' });
+    }
+};
+
+// Endpoint: GET /api/usuarios/:rut_usuario
+export const obtenerUsuarioPorRUT = async (request: Request, response: Response) => {
+    try {
+        const { rut_usuario } = request.params;
+
+        // Validar que venga el RUT
+        if (!rut_usuario) {
+            return response.status(400).json({ message: "Debe enviar el rut_usuario" });
+        }
+
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_usuario);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error });
+        }
+
+        // Buscar el usuario en la base de datos
+        const usuario = await Usuario.findByPk(rutValidacion.rut);
+
+        if (!usuario) {
+            return response.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        // Devolver solo los datos relevantes (no la contraseña)
+        const { contraseña, ...usuarioSinContraseña } = usuario.toJSON();
+
+        return response.status(200).json({
+            message: "Usuario encontrado exitosamente",
+            usuario: usuarioSinContraseña
+        });
+
+    } catch (error) {
+        console.error("Error al obtener usuario por RUT:", error);
+        return response.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
+// Endpoint: PUT /api/usuarios/:rut_usuario/deshabilitar
+export const deshabilitarUsuario = async (request: Request, response: Response) => {
+    try {
+        const { rut_usuario } = request.params;
+
+        // Validar que venga el RUT
+        if (!rut_usuario) {
+            return response.status(400).json({ message: "Debe enviar el rut_usuario" });
+        }
+
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_usuario);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error });
+        }
+
+        // Buscar el usuario
+        const usuario = await Usuario.findByPk(rutValidacion.rut);
+
+        if (!usuario) {
+            return response.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        // Cambiar estado a inactivo
+        usuario.estado_usuario = 'inactivo';
+        await usuario.save();
+
+        return response.status(200).json({
+            message: "Usuario deshabilitado exitosamente"
+        });
+
+    } catch (error) {
+        console.error("Error al deshabilitar usuario:", error);
+        return response.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
+// Endpoint: PUT /api/usuarios/:rut_usuario/reactivar
+export const reactivarUsuario = async (request: Request, response: Response) => {
+    try {
+        const { rut_usuario } = request.params;
+
+        // Validar que venga el RUT
+        if (!rut_usuario) {
+            return response.status(400).json({ message: "Debe enviar el rut_usuario" });
+        }
+
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_usuario);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error });
+        }
+
+        // Buscar el usuario
+        const usuario = await Usuario.findByPk(rutValidacion.rut);
+
+        if (!usuario) {
+            return response.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        // Cambiar estado a activo
+        usuario.estado_usuario = 'activo';
+        await usuario.save();
+
+        return response.status(200).json({
+            message: "Usuario reactivado exitosamente"
+        });
+
+    } catch (error) {
+        console.error("Error al reactivar usuario:", error);
+        return response.status(500).json({ message: "Error interno del servidor" });
+    }
+};

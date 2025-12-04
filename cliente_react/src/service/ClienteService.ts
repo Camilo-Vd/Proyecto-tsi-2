@@ -1,25 +1,30 @@
 import axios from "./axiosInstance";
-import { AxiosError } from "axios";
 import { safeParse } from "valibot";
 import { ClienteEditarSchema, ClienteSchema, ClientesServerSchema } from "../types/cliente";
 import { validarRUTFormulario } from "../utils/rutUtils";
+import { handleAxiosError, extractArrayResponse, ApiResponse } from "../utils/apiErrorHandler";
 
-export async function getClientes() {
+export async function getClientes(filtro: 'activos' | 'inactivos' | 'todos' = 'activos'): Promise<ApiResponse<any[]>> {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/clientes`;
-        const { data: clientes } = await axios.get(url);
-        // Usar esquema del servidor que no valida RUT
-        const resultado = safeParse(ClientesServerSchema, clientes);        
+        const url = `${import.meta.env.VITE_API_URL}/clientes?filtro=${filtro}`;
+        const { data } = await axios.get(url);
+        
+        const clientes = extractArrayResponse(data);
+        const resultado = safeParse(ClientesServerSchema, clientes);
+        
         if (resultado.success) {
-            return resultado.output;
-        } else {
-            console.log("Data: ", resultado.output);
-            console.error("Error de validación de datos", resultado.issues);
-            return []; // Retorna array vacío en caso de error de validación
+            return { success: true, data: resultado.output };
         }
+
+        console.error("Error de validación:", resultado.issues);
+        // Si la validación falla pero hay datos, retornar como están
+        if (clientes.length > 0) {
+            return { success: true, data: clientes };
+        }
+
+        return { success: true, data: [] };
     } catch (error) {
-        console.error("Error al obtener clientes:", error);
-        return []; // Siempre retorna un array para evitar undefined
+        return handleAxiosError(error, "Error al obtener clientes");
     }
 }
 
@@ -27,76 +32,102 @@ type ClienteFormData = {
     [k: string]: FormDataEntryValue
 }
 
-export async function clienteAñadir(formData: ClienteFormData) {
+export async function clienteAñadir(formData: ClienteFormData): Promise<ApiResponse<void>> {
     try {
-        // Validar esquema básico primero
+        // Validar esquema básico
         const resultado = safeParse(ClienteSchema, formData);
         if (!resultado.success) {
-            return { success: false, errors: resultado.issues.map(issue => issue.message) };
+            return {
+                success: false,
+                error: resultado.issues.map(issue => issue.message).join(", "),
+                code: "VALIDATION_ERROR",
+            };
         }
 
-        // Validar RUT específicamente
+        // Validar RUT
         const rutValidacion = validarRUTFormulario(resultado.output.rut_cliente);
         if (!rutValidacion.valido) {
-            return { success: false, errors: [rutValidacion.error || 'RUT inválido'] };
+            return {
+                success: false,
+                error: rutValidacion.error || "RUT inválido",
+                code: "INVALID_RUT",
+            };
         }
 
         const url = `${import.meta.env.VITE_API_URL}/clientes/crear`;
         await axios.post(url, {
-            rut_cliente: resultado.output.rut_cliente, // El backend procesará el RUT
+            rut_cliente: resultado.output.rut_cliente,
             nombre_cliente: resultado.output.nombre_cliente,
             contacto_cliente: resultado.output.contacto_cliente
         });
+
         return { success: true };
     } catch (error) {
-        if (error instanceof AxiosError) {
-            // Manejo de errores específicos del backend
-            if (error.response?.status === 409) {
-                return { success: false, errors: ["El cliente con este RUT ya existe"] };
-            }
-            if (error.response?.status === 400) {
-                return { success: false, errors: ["Todos los campos son obligatorios"] };
-            }
-            if (error.response?.data?.message) {
-                return { success: false, errors: [error.response.data.message] };
-            }
-        }
-        return { success: false, errors: ["Error al crear el cliente"] };
+        return handleAxiosError(error, "Error al crear el cliente");
     }
 }
 
-export async function clienteEditar(formData: ClienteFormData) {
+export async function clienteEditar(formData: ClienteFormData): Promise<ApiResponse<void>> {
     try {
-        // Validar esquema básico primero
+        // Validar esquema básico
         const resultado = safeParse(ClienteEditarSchema, formData);
         if (!resultado.success) {
-            return { success: false, error: "Datos del formulario inválidos" };
+            return {
+                success: false,
+                error: resultado.issues.map(issue => issue.message).join(", "),
+                code: "VALIDATION_ERROR",
+            };
         }
 
-        // Validar RUT específicamente
+        // Validar RUT
         const rutValidacion = validarRUTFormulario(resultado.output.rut_cliente);
         if (!rutValidacion.valido) {
-            return { success: false, error: rutValidacion.error || 'RUT inválido' };
+            return {
+                success: false,
+                error: rutValidacion.error || "RUT inválido",
+                code: "INVALID_RUT",
+            };
         }
 
-            const url = `${import.meta.env.VITE_API_URL}/clientes/actualizar`;
-            await axios.put(url, {
-                rut_cliente: resultado.output.rut_cliente,
-                nombre_cliente: resultado.output.nombre_cliente,
-                contacto_cliente: resultado.output.contacto_cliente
-            });
+        const url = `${import.meta.env.VITE_API_URL}/clientes/actualizar`;
+        await axios.put(url, {
+            rut_cliente: resultado.output.rut_cliente,
+            nombre_cliente: resultado.output.nombre_cliente,
+            contacto_cliente: resultado.output.contacto_cliente
+        });
+
         return { success: true };
     } catch (error) {
-        return { success: false, error: "Error al actualizar el cliente" };
+        return handleAxiosError(error, "Error al actualizar el cliente");
     }
 }
 
-export async function clienteEliminar(rut_cliente: string) {
-    try {        
+export async function clienteEliminar(rut_cliente: string): Promise<ApiResponse<void>> {
+    try {
         const url = `${import.meta.env.VITE_API_URL}/clientes/eliminar/${rut_cliente}`;
         await axios.delete(url);
         return { success: true };
     } catch (error) {
-        return { success: false, error: "Error al eliminar el cliente" };
+        return handleAxiosError(error, "Error al eliminar el cliente");
+    }
+}
+
+export async function clienteDeshabilitarReq(rut_cliente: string): Promise<ApiResponse<void>> {
+    try {
+        const url = `${import.meta.env.VITE_API_URL}/clientes/${rut_cliente}/deshabilitar`;
+        await axios.put(url);
+        return { success: true };
+    } catch (error) {
+        return handleAxiosError(error, "Error al deshabilitar el cliente");
+    }
+}
+
+export async function clienteReactivar(rut_cliente: string): Promise<ApiResponse<void>> {
+    try {
+        const url = `${import.meta.env.VITE_API_URL}/clientes/${rut_cliente}/reactivar`;
+        await axios.put(url);
+        return { success: true };
+    } catch (error) {
+        return handleAxiosError(error, "Error al reactivar el cliente");
     }
 }

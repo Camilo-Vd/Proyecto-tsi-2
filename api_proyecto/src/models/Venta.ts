@@ -39,6 +39,13 @@ class Venta extends Model {
     })
     declare rut_usuario: number;
 
+    @Column({
+        type: DataType.ENUM('completada', 'anulada'),
+        defaultValue: 'completada',
+        allowNull: false
+    })
+    declare estado_venta: 'completada' | 'anulada';
+
     // Relaciones
     @BelongsTo(() => Cliente)
     declare cliente: Cliente;

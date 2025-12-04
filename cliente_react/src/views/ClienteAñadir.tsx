@@ -1,4 +1,4 @@
-import { Form, Link, redirect, useLocation, useActionData, type ActionFunctionArgs } from "react-router-dom";
+import { Form, Link, redirect, useSearchParams, useActionData, type ActionFunctionArgs } from "react-router-dom";
 import { useState } from "react";
 import { clienteAñadir } from "../service/ClienteService";
 
@@ -14,9 +14,9 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function ClienteAñadir() {
-    const location = useLocation();
-    const backUrl = location.state?.from || "/clientes";
-    const actionData = useActionData() as { success: boolean; errors?: string[] } | undefined;
+    const [searchParams] = useSearchParams();
+    const actionData = useActionData() as { success: boolean; errors?: string[]; detalleErrores?: Record<string, string[]> } | undefined;
+    const backUrl = searchParams.get("from") || "/clientes";
     const [rutFormateado, setRutFormateado] = useState("");
 
     // Función para formatear el RUT automáticamente
@@ -63,54 +63,90 @@ export default function ClienteAñadir() {
                     Registrar Cliente
                 </h1>
                 <Link to={backUrl} className="btn btn-secondary">
-                    <i className="bi bi-arrow-left"></i> Volver
+                    <i className="bi bi-arrow-left me-2"></i>Volver
                 </Link>
             </div>
-            <p>Formulario para registrar un nuevo cliente.</p>
-            
-           
+            <p>Formulario para registrar un nuevo cliente en el sistema.</p>
             
             <Form method="POST" className="card p-4 shadow-lg" style={{ maxWidth: 500, margin: "0 auto" }}>
-                 {/* Mostrar errores si existen */}
+                {/* Mostrar error general */}
                 {actionData && !actionData.success && (
-                    <div className="alert alert-danger" role="alert">
+                    <div className="alert alert-danger alert-dismissible fade show" role="alert">
                         <i className="bi bi-exclamation-triangle me-2"></i>
-                        {actionData.errors?.map((error, index) => (
-                            <span key={index}>{error}</span>
-                        ))}
+                        <strong>{actionData.errors?.[0] || 'Error al registrar el cliente'}</strong>
+                        {actionData.detalleErrores && Object.keys(actionData.detalleErrores).length > 0 && (
+                            <ul className="mb-0 mt-2">
+                                {Object.entries(actionData.detalleErrores).map(([campo, errores]) => (
+                                    <li key={campo}>{errores.join(", ")}</li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                 )}
                 <input type="hidden" name="backUrl" value={backUrl} />
                 <div className="mb-3">
-                    <label className="form-label">RUT del cliente</label>
+                    <label className="form-label fw-bold">
+                        RUT del cliente {actionData?.detalleErrores?.rut_cliente && <span className="text-danger">*</span>}
+                    </label>
                     <input 
                         type="text" 
-                        className="form-control" 
+                        className={`form-control ${actionData?.detalleErrores?.rut_cliente ? 'is-invalid' : ''}`}
                         name="rut_cliente" 
                         placeholder="12.345.678-9" 
                         value={rutFormateado}
                         onChange={manejarCambioRut}
                         maxLength={12}
-                        required 
                     />
+                    {actionData?.detalleErrores?.rut_cliente && (
+                        <div className="invalid-feedback d-block">
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            {actionData.detalleErrores.rut_cliente.join(", ")}
+                        </div>
+                    )}
                 </div>
                 <div className="mb-3">
-                    <label className="form-label">Nombre completo</label>
-                    <input type="text" className="form-control" name="nombre_cliente" placeholder="Juan Pérez" required />
+                    <label className="form-label fw-bold">
+                        Nombre completo {actionData?.detalleErrores?.nombre_cliente && <span className="text-danger">*</span>}
+                    </label>
+                    <input 
+                        type="text" 
+                        className={`form-control ${actionData?.detalleErrores?.nombre_cliente ? 'is-invalid' : ''}`}
+                        name="nombre_cliente" 
+                        placeholder="Juan Pérez" 
+                    />
+                    {actionData?.detalleErrores?.nombre_cliente && (
+                        <div className="invalid-feedback d-block">
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            {actionData.detalleErrores.nombre_cliente.join(", ")}
+                        </div>
+                    )}
                 </div>
                 <div className="mb-3">
-                    <label className="form-label">Contacto</label>
-                    <input type="text" className="form-control" name="contacto_cliente" placeholder="+56 9 1234 5678" required />
+                    <label className="form-label fw-bold">
+                        Contacto {actionData?.detalleErrores?.contacto_cliente && <span className="text-danger">*</span>}
+                    </label>
+                    <input 
+                        type="text" 
+                        className={`form-control ${actionData?.detalleErrores?.contacto_cliente ? 'is-invalid' : ''}`}
+                        name="contacto_cliente" 
+                        placeholder="+56 9 1234 5678" 
+                    />
+                    {actionData?.detalleErrores?.contacto_cliente && (
+                        <div className="invalid-feedback d-block">
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            {actionData.detalleErrores.contacto_cliente.join(", ")}
+                        </div>
+                    )}
                 </div>
                 <div className="d-flex justify-content-end gap-2">
-                    <button type="submit" className="btn btn-success">
-                        <i className="bi bi-check-lg me-2"></i>
-                        Guardar cliente
-                    </button>
                     <Link to={backUrl} className="btn btn-danger">
                         <i className="bi bi-x-lg me-2"></i>
                         Cancelar
                     </Link>
+                    <button type="submit" className="btn btn-success">
+                        <i className="bi bi-check-lg me-2"></i>
+                        Guardar cliente
+                    </button>                    
                 </div>
             </Form>
         </div>

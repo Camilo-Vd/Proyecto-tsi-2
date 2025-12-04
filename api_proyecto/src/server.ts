@@ -9,18 +9,18 @@ server.get('/', (request, response) => {
     response.send('Hola Mundo Cuyeyo')
 })
 
-async function conectarDB() {
+export async function conectarDB() {
     try {
         await db.authenticate();
-        db.sync()
+        await db.sync({ alter: false })
         console.log('Conexión a la base de datos establecida correctamente.')
 
     } catch (error) {
         console.error('Error al conectar a la base de datos:', error);
+        throw error;
     }
 }
 
-conectarDB();
 //CORS
 const corsOptions: CorsOptions = {
     origin: function (origin, callback) {

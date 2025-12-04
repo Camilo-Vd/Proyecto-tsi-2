@@ -1,11 +1,39 @@
-import { request, Request, Response } from "express";
+import { Request, Response } from "express";
 import Cliente from "../models/Cliente";
+import Venta from "../models/Venta";
 import { procesarRUTBackend } from "../utils/rutUtils";
+import { Op } from "sequelize";
 
 export const obtenerClientes = async (request: Request, response: Response) => {
     try {
-        const clientes = await Cliente.findAll();
-        response.status(200).json(clientes)
+        // Obtener el filtro del query parameter (activos, inactivos, todos)
+        const filtro = (request.query.filtro as string) || 'activos';
+        
+        let where: any = {};
+        
+        if (filtro === 'activos') {
+            where.estado_cliente = 'activo';
+        } else if (filtro === 'inactivos') {
+            where.estado_cliente = 'inactivo';
+        }
+        // Si es 'todos', no agregamos filtro (retorna todos)
+        
+        const clientes = await Cliente.findAll({ where });
+        
+        // Obtener el conteo de ventas para cada cliente
+        const clientesConVentas = await Promise.all(
+            clientes.map(async (cliente) => {
+                const cantidadVentas = await Venta.count({
+                    where: { rut_cliente: cliente.rut_cliente }
+                });
+                return {
+                    ...cliente.toJSON(),
+                    cantidad_compras: cantidadVentas
+                };
+            })
+        );
+        
+        response.status(200).json(clientesConVentas)
     }
     catch (error) {
         console.error("error al obtener clientes:", error);
@@ -112,12 +140,42 @@ export const eliminarCliente = async (request: Request, response: Response) => {
         if (!cliente) {
             return response.status(404).json({ message: 'Cliente no encontrado' });
         }
-        // Eliminar el cliente
-        await cliente.destroy();
-        response.status(200).json({ message: "cliente eliminado exitosamente" })
+        // Deshabilitar el cliente (soft delete)
+        await cliente.update({ estado_cliente: 'inactivo' });
+        response.status(200).json({ message: "cliente deshabilitado exitosamente" })
     }
     catch (error) {
         console.error("error al eliminar cliente:", error)
+        response.status(500).json({ message: "error en el servidor" })
+    }
+}
+
+// Alias semántico: tanto DELETE como PUT deshabilitar hacen soft delete
+export const deshabilitarCliente = eliminarCliente;
+
+export const reactivarCliente = async (request: Request, response: Response) => {
+    try {
+        const { rut_cliente } = request.params;
+        // Validación de campo obligatorio
+        if (!rut_cliente) {
+            return response.status(400).json({ message: 'El RUT del cliente es obligatorio' });
+        }
+        // Validar y procesar el RUT
+        const rutValidacion = procesarRUTBackend(rut_cliente);
+        if (!rutValidacion.valido) {
+            return response.status(400).json({ message: rutValidacion.error })
+        }
+        // Buscar el cliente por su RUT (usando RUT numérico validado)
+        const cliente = await Cliente.findByPk(rutValidacion.rut);
+        if (!cliente) {
+            return response.status(404).json({ message: 'Cliente no encontrado' });
+        }
+        // Reactivar el cliente
+        await cliente.update({ estado_cliente: 'activo' });
+        response.status(200).json({ message: "cliente reactivado exitosamente" })
+    }
+    catch (error) {
+        console.error("error al reactivar cliente:", error)
         response.status(500).json({ message: "error en el servidor" })
     }
 }

@@ -1,6 +1,5 @@
-﻿import { Column, Table, Model, DataType, HasMany } from "sequelize-typescript";
+﻿import { Column, Table, Model, DataType } from "sequelize-typescript";
 import { formatearRUT } from "../utils/rutUtils";
-import Producto from "./Producto";
 
 @Table({ tableName: 'proveedores' })
 class Proveedor extends Model {
@@ -29,8 +28,12 @@ class Proveedor extends Model {
     })
     declare direccion_proveedor: string;
 
-    @HasMany(() => Producto)
-    declare productos: Producto[];
+    @Column({
+        type: DataType.ENUM('activo', 'inactivo'),
+        defaultValue: 'activo',
+        allowNull: false
+    })
+    declare estado_proveedor: 'activo' | 'inactivo';
 
     /**
      * Getter para obtener el RUT formateado con dígito verificador

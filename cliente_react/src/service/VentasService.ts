@@ -1,97 +1,133 @@
-import axios from "./axiosInstance";
-import { AxiosError } from "axios";
+import axiosInstance from "./axiosInstance";
+import { Venta, VentasSchema } from "../types/venta";
 import { safeParse } from "valibot";
-import { VentasServerSchema } from "../types/venta";
+import { handleAxiosError, extractArrayResponse, ApiResponse } from "../utils/apiErrorHandler";
 
-export async function getVentas() {
+export interface VentaCreatePayload {
+    rut_cliente: string;
+    rut_usuario: string;
+    detalles: {
+        id_producto: number;
+        id_talla: number;
+        cantidad_vendida: number;
+        precio_unitario_venta: number;
+    }[];
+}
+
+export const obtenerVentas = async (): Promise<ApiResponse<Venta[]>> => {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/ventas`;
-        const { data: ventas } = await axios.get(url);
-        const resultado = safeParse(VentasServerSchema, ventas);
+        const response = await axiosInstance.get("/ventas");
+        
+        const ventasData = extractArrayResponse(response.data);
+        const resultado = safeParse(VentasSchema, ventasData);
+        
         if (resultado.success) {
-            return resultado.output;
-        } else {
-            console.error("Error de validación de datos", resultado.issues);
-            return [];
+            return { success: true, data: resultado.output };
         }
+
+        console.error("Validación de ventas fallida:", resultado.issues);
+        if (ventasData.length > 0) {
+            return { success: true, data: ventasData as Venta[] };
+        }
+
+        return { success: true, data: [] };
     } catch (error) {
-        console.log(error);
-        return [];
+        return handleAxiosError(error, "Error al obtener las ventas");
     }
-}
+};
 
-type DetalleVenta = {
-    id_producto: number;
-    id_talla: number;
-    cantidad_vendida: number;
-    precio_unitario_venta: number;
-}
-
-export async function crearVenta(rut_cliente: number | null, detalles: DetalleVenta[]) {
+export const obtenerVentasAnuladas = async (): Promise<ApiResponse<Venta[]>> => {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/ventas/crear`;
-        const payload: any = {
-            detalles: detalles
+        const response = await axiosInstance.get("/ventas/anuladas");
+        
+        const ventasData = extractArrayResponse(response.data);
+        const resultado = safeParse(VentasSchema, ventasData);
+        
+        if (resultado.success) {
+            return { success: true, data: resultado.output };
+        }
+
+        console.error("Validación de ventas fallida:", resultado.issues);
+        if (ventasData.length > 0) {
+            return { success: true, data: ventasData as Venta[] };
+        }
+
+        return { success: true, data: [] };
+    } catch (error) {
+        return handleAxiosError(error, "Error al obtener ventas anuladas");
+    }
+};
+
+export const obtenerTodasLasVentas = async (): Promise<ApiResponse<Venta[]>> => {
+    try {
+        const response = await axiosInstance.get("/ventas/todas");
+        
+        const ventasData = extractArrayResponse(response.data);
+        const resultado = safeParse(VentasSchema, ventasData);
+        
+        if (resultado.success) {
+            return { success: true, data: resultado.output };
+        }
+
+        console.error("Validación de ventas fallida:", resultado.issues);
+        if (ventasData.length > 0) {
+            return { success: true, data: ventasData as Venta[] };
+        }
+
+        return { success: true, data: [] };
+    } catch (error) {
+        return handleAxiosError(error, "Error al obtener todas las ventas");
+    }
+};
+
+// Alias para compatibilidad
+export const getVentas = obtenerVentas;
+
+export const crearVenta = async (
+    payload: VentaCreatePayload
+): Promise<ApiResponse<Venta>> => {
+    try {
+        const response = await axiosInstance.post("/ventas/crear", payload);
+
+        if (response.data?.venta) {
+            return { success: true, data: response.data.venta };
+        }
+
+        return {
+            success: false,
+            error: "Error al crear la venta",
+            code: "UNKNOWN_ERROR",
         };
-        
-        if (rut_cliente) {
-            payload.rut_cliente = rut_cliente;
-        }
-
-        const { data: response } = await axios.post(url, payload);
-        return { success: true, ventaId: response.id_venta };
     } catch (error) {
-        if (error instanceof AxiosError) {
-            if (error.response?.status === 400) {
-                return { success: false, error: "Datos inválidos para la venta" };
-            }
-            if (error.response?.data?.message) {
-                return { success: false, error: error.response.data.message };
-            }
-        }
-        return { success: false, error: "Error al crear la venta" };
+        return handleAxiosError(error, "Error al crear la venta");
     }
-}
+};
 
-export async function imprimirVenta(id_venta: number) {
+export const obtenerComprobante = async (
+    id_venta: number
+): Promise<ApiResponse<string>> => {
     try {
-        const url = `${import.meta.env.VITE_API_URL}/ventas/imprimir/${id_venta}`;
-        const { data } = await axios.get(url, { responseType: 'blob' });
-        
-        // Descargar PDF
-        const url_blob = window.URL.createObjectURL(new Blob([data]));
-        const link = document.createElement('a');
-        link.href = url_blob;
-        link.setAttribute('download', `venta-${id_venta}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode?.removeChild(link);
-        
+        const response = await axiosInstance.get(`/ventas/imprimir/${id_venta}`, {
+            responseType: "blob",
+        });
+
+        return { success: true, data: URL.createObjectURL(response.data) };
+    } catch (error) {
+        return handleAxiosError(error, "Error al obtener el comprobante");
+    }
+};
+
+export const anularVenta = async (
+    id_venta: number
+): Promise<ApiResponse<void>> => {
+    try {
+        await axiosInstance.put(`/ventas/${id_venta}/anular`);
         return { success: true };
     } catch (error) {
-        console.error("Error al imprimir venta", error);
-        return { success: false, error: "Error al descargar PDF" };
+        return handleAxiosError(error, "Error al anular la venta");
     }
-}
+};
 
-// Función auxiliar para obtener productos disponibles
-export async function getProductosDisponibles() {
-    try {
-        const url = `${import.meta.env.VITE_API_URL}/inventario`;
-        const { data } = await axios.get(url);
-        return data || [];
-    } catch (error) {
-        return [];
-    }
-}
+// Alias para compatibilidad
+export const eliminarVenta = anularVenta;
 
-// Función auxiliar para obtener tallas
-export async function getTallas() {
-    try {
-        const url = `${import.meta.env.VITE_API_URL}/tallas`;
-        const { data } = await axios.get(url);
-        return data || [];
-    } catch (error) {
-        return [];
-    }
-}
