@@ -3,53 +3,56 @@ import Inventario from "../models/Inventario";
 import Producto from "../models/Producto";
 import Talla from "../models/Talla";
 import Categoria from "../models/Categoria";
-import Proveedor from "../models/Proveedor";
 
 
 
 export const obtenerInventarios = async (request: Request, response: Response) => {
     try {
-        const inventario = await Inventario.findAll({
-            attributes: ['stock_actual'],
-            include: [
-                {
-                    model: Producto,
-                    attributes: ['id_producto', 'nombre_producto', 'precio_unitario'],
-                    include: [
-                        { model: Categoria, attributes: ['nombre_categoria'] },
-                        { model: Proveedor, attributes: ['nombre'] } // solo si el producto tiene proveedor
-                    ]
-                },
-                {
-                    model: Talla,
-                    attributes: ['nombre_talla']
-                }
-            ]
+        const inventarios = await Inventario.findAll({
+            attributes: ['id_producto', 'id_talla', 'precio_unitario', 'stock_actual', 'stock_critico']
         });
 
-        //Transformar datos a un formato limpio para el frontend
-        const resultado = inventario.map((item: any) => ({
-            id_producto: item.Producto?.id_producto,
-            nombre_producto: item.Producto?.nombre_producto,
-            nombre_categoria: item.Producto?.Categoria?.nombre_categoria,
-            nombre_talla: item.Talla?.nombre_talla,
-            nombre_proveedor: item.Producto?.Proveedor?.nombre || '—',
-            precio_unitario: item.Producto?.precio_unitario,
-            stock_actual: item.stock_actual
+        // Para cada inventario, obtener los datos relacionados manualmente
+        const resultado = await Promise.all(inventarios.map(async (inv: any) => {
+            const producto = await Producto.findByPk(inv.id_producto, {
+                attributes: ['nombre_producto', 'id_categoria'],
+                include: [
+                    { model: Categoria, attributes: ['nombre_categoria'] }
+                ]
+            });
+
+            const talla = await Talla.findByPk(inv.id_talla, {
+                attributes: ['nombre_talla']
+            });
+
+            return {
+                id_producto: inv.id_producto,
+                id_talla: inv.id_talla,
+                nombre_producto: producto?.nombre_producto || 'N/A',
+                nombre_categoria: producto?.categoria?.nombre_categoria || 'Sin categoría',
+                nombre_talla: talla?.nombre_talla || 'N/A',
+                precio_unitario: inv.precio_unitario,
+                stock_actual: inv.stock_actual,
+                stock_critico: inv.stock_critico
+            };
         }));
 
-        response.status(200).json(resultado);
+        response.status(200).json({
+            message: "Inventarios obtenidos correctamente",
+            total_registros: resultado.length,
+            inventarios: resultado
+        });
 
     } catch (error) {
-        console.error("error al obtner el inventario:", error)
-        response.status(500).json({ message: "error en el servidor" })
+        console.error("Error al obtener el inventario:", error)
+        response.status(500).json({ message: "Error en el servidor" })
     }
 }
 
 export const editarInventario = async (request: Request, response: Response) => {
     try {
         const { id_producto, id_talla } = request.params;
-        const { stock_actual } = request.body;
+        const { stock_actual, precio_unitario, stock_critico } = request.body;
 
         // Validación de existencia de parámetros
         if (!id_producto || !id_talla) {
@@ -67,28 +70,33 @@ export const editarInventario = async (request: Request, response: Response) => 
 
         // Actualizar solo los campos permitidos
         if (stock_actual !== undefined) inventario.stock_actual = stock_actual;
+        if (precio_unitario !== undefined) inventario.precio_unitario = precio_unitario;
+        if (stock_critico !== undefined) inventario.stock_critico = stock_critico;
 
         await inventario.save();
 
         // Retornar inventario actualizado con datos completos
-        const actualizado = await Inventario.findOne({
-            where: { id_producto, id_talla },
-            attributes: ['stock_actual'],
+        const producto = await Producto.findByPk(inventario.id_producto, {
+            attributes: ['nombre_producto', 'id_categoria'],
             include: [
-                {
-                    model: Producto,
-                    attributes: ['id_producto', 'nombre_producto', 'precio_unitario'],
-                    include: [
-                        { model: Categoria, attributes: ['nombre_categoria'] },
-                        { model: Proveedor, attributes: ['nombre'] }
-                    ]
-                },
-                {
-                    model: Talla,
-                    attributes: ['nombre_talla']
-                }
+                { model: Categoria, attributes: ['nombre_categoria'] }
             ]
         });
+
+        const talla = await Talla.findByPk(inventario.id_talla, {
+            attributes: ['nombre_talla']
+        });
+
+        const actualizado = {
+            id_producto: inventario.id_producto,
+            id_talla: inventario.id_talla,
+            nombre_producto: producto?.nombre_producto || 'N/A',
+            nombre_categoria: producto?.categoria?.nombre_categoria || 'Sin categoría',
+            nombre_talla: talla?.nombre_talla || 'N/A',
+            precio_unitario: inventario.precio_unitario,
+            stock_actual: inventario.stock_actual,
+            stock_critico: inventario.stock_critico
+        };
 
         response.status(200).json({
             message: 'Inventario actualizado correctamente',
@@ -130,10 +138,10 @@ export const eliminarInventario = async (request: Request, response: Response) =
 
 export const agregarInventario = async (request: Request, response: Response) => {
     try {
-        const { id_producto, id_talla, stock_actual } = request.body;
+        const { id_producto, id_talla, precio_unitario, stock_actual, stock_critico } = request.body;
 
-        if (!id_producto || !id_talla || stock_actual === undefined) {
-            return response.status(400).json({ message: "faltan datos  obligatorios" })
+        if (!id_producto || !id_talla || precio_unitario === undefined || stock_actual === undefined) {
+            return response.status(400).json({ message: "faltan datos obligatorios (id_producto, id_talla, precio_unitario, stock_actual)" })
         }
 
         const productoExiste = await Producto.findByPk(id_producto);
@@ -157,24 +165,22 @@ export const agregarInventario = async (request: Request, response: Response) =>
         await Inventario.create({
             id_producto,
             id_talla,
-            stock_actual
+            precio_unitario,
+            stock_actual,
+            stock_critico: stock_critico || 5
         });
 
         const inventarioCreado = await Inventario.findOne({
             where: { id_producto, id_talla },
-            attributes: ['stock_actual'],
+            attributes: ['stock_actual', 'precio_unitario', 'stock_critico'],
             include: [
                 {
                     model: Producto,
-                    attributes: ['id_producto', 'nombre_producto', 'precio_unitario'],
+                    attributes: ['id_producto', 'nombre_producto', 'id_categoria'],
                     include: [
                         {
                             model: Categoria,
                             attributes: ['nombre_categoria']
-                        },
-                        {
-                            model: Proveedor,
-                            attributes: ['nombre']
                         }
                     ]
                 },

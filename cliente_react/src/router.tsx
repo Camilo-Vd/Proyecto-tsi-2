@@ -1,24 +1,26 @@
 import { createBrowserRouter } from "react-router-dom";
 import Layout from "./layouts/Layout";
 import Home from "./views/Home";
-import Inventario from "./views/Inventario";
-import Ventas from "./views/Ventas";
+import Ventas, { loader as loaderVentas } from "./views/Ventas";
 import InventarioAgregar from "./views/InventarioAgregar";
+import InventarioEditar from "./views/InventarioEditar";
 import VentasRegistrar from "./views/VentasRegistrar";
 import ClienteAñadir, { action as actionClienteAñadir } from "./views/ClienteAñadir";
 import Compras from "./views/Compras";
 import ComprasRegistrar from "./views/ComprasRegistrar";
 import ProveedorAñadir, { action as actionProveedorAñadir } from "./views/ProveedorAñadir";
-import Clientes, { loader as loaderClientes, action as actionClientes } from "./views/Clientes";
-import Proveedores, { loader as loaderProveedor, action as actionProveedor } from "./views/Proveedores";
+import Clientes, { loader as loaderClientes } from "./views/Clientes";
+import Proveedores, { loader as loaderProveedor } from "./views/Proveedores";
+import Inventario, { loader as loaderInventario, action as actionInventario } from "./views/Inventario";
 import Reportes from "./views/Reportes";
 import InicioSesion, { action as acciónInicioSesion } from "./views/InicioSesion";
-import Usuarios from "./views/Usuarios";
+import Usuarios, { loader as loaderUsuarios } from "./views/Usuarios";
 import UsuariosRegistrar, { action as actionUsuarioRegistrar } from "./views/UsuariosRegistrar";
 import Configuraciones from "./views/Configuraciones";
-import ClientesEditar, { action as actionClientesEditar } from "./views/ClientesEditar";
-import ProveedorEditar, { action as actionProveedorEditar } from "./views/ProveedorEditar";
+import ClientesEditar from "./views/ClientesEditar";
+import ProveedorEditar from "./views/ProveedorEditar";
 import PrivateRoute from "./components/PrivateRoute";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
 
 
@@ -40,17 +42,33 @@ export const router = createBrowserRouter([
                         index: true,
                         element: <Home />,
                     },
+                    // ============ INVENTARIO - Acceso a Admin y Vendedor ============
                     {
                         path: "inventario",
                         element: <Inventario />,
+                        loader: loaderInventario,
+                        action: actionInventario,
                     },
+                    // Agregar y Editar solo para Admin
                     {
-                        path: "inventario/agregar",
-                        element: <InventarioAgregar />,
+                        element: <RoleProtectedRoute allowedRoles={["Administrador"]} />,
+                        children: [
+                            {
+                                path: "inventario/agregar",
+                                element: <InventarioAgregar />,
+                            },
+                            {
+                                path: "inventario/editar/:id_producto",
+                                element: <InventarioEditar />,
+                            },
+                        ],
                     },
+
+                    // ============ VENTAS - Acceso a Admin y Vendedor ============
                     {
                         path: "ventas",
                         element: <Ventas />,
+                        loader: loaderVentas,
                     },
                     {
                         path: "ventas/registrar",
@@ -61,64 +79,98 @@ export const router = createBrowserRouter([
                         element: <ClienteAñadir />,
                         action: actionClienteAñadir,
                     },
+
+                    // ============ COMPRAS - Solo Admin ============
                     {
-                        path: "compras",
-                        element: <Compras />,
+                        element: <RoleProtectedRoute allowedRoles={["Administrador"]} />,
+                        children: [
+                            {
+                                path: "compras",
+                                element: <Compras />,
+                            },
+                            {
+                                path: "compras/registrar",
+                                element: <ComprasRegistrar />,
+                            },
+                            {
+                                path: "compras/añadir-proveedor",
+                                element: <ProveedorAñadir />,
+                                action: actionProveedorAñadir,
+                            },
+                        ],
                     },
-                    {
-                        path: "compras/registrar",
-                        element: <ComprasRegistrar />,
-                    },
-                    {
-                        path: "compras/añadir-proveedor",
-                        element: <ProveedorAñadir />,
-                        action: actionProveedorAñadir,
-                    },
+
+                    // ============ CLIENTES - Acceso a Admin y Vendedor ============
                     {
                         path: "clientes",
                         element: <Clientes />,
                         loader: loaderClientes,
-                        action: actionClientes,
                     },
                     {
-                        path: "clientes/registrar",
-                        element: <ClienteAñadir />,
-                        action: actionClienteAñadir,
+                        element: <RoleProtectedRoute allowedRoles={["Administrador"]} />,
+                        children: [
+                            {
+                                path: "clientes/registrar",
+                                element: <ClienteAñadir />,
+                                action: actionClienteAñadir,
+                            },
+                            {
+                                path: "clientes/editar/:rut_cliente",
+                                element: <ClientesEditar />,
+                            },
+                        ],
                     },
-                    {
-                        path: "clientes/editar/:rut_cliente",
-                        element: <ClientesEditar />,
-                        action: actionClientesEditar,
-                    },
+
+                    // ============ PROVEEDORES - Admin y Vendedor (ver), Admin (editar) ============
                     {
                         path: "proveedores",
                         element: <Proveedores />,
                         loader: loaderProveedor,
-                        action: actionProveedor,
                     },
                     {
-                        path: "proveedores/registrar",
-                        element: <ProveedorAñadir />,
-                        action: actionProveedorAñadir,
+                        element: <RoleProtectedRoute allowedRoles={["Administrador"]} />,
+                        children: [
+                            {
+                                path: "proveedores/registrar",
+                                element: <ProveedorAñadir />,
+                                action: actionProveedorAñadir,
+                            },
+                            {
+                                path: "proveedores/editar/:rut_proveedor",
+                                element: <ProveedorEditar />,
+                            },
+                        ],
                     },
+
+                    // ============ REPORTES - Solo Admin ============
                     {
-                        path: "proveedores/editar/:rut_proveedor",
-                        element: <ProveedorEditar />,
-                        action: actionProveedorEditar,
+                        element: <RoleProtectedRoute allowedRoles={["Administrador"]} />,
+                        children: [
+                            {
+                                path: "reportes",
+                                element: <Reportes />,
+                            },
+                        ],
                     },
+
+                    // ============ USUARIOS - Solo Admin ============
                     {
-                        path: "reportes",
-                        element: <Reportes />,
+                        element: <RoleProtectedRoute allowedRoles={["Administrador"]} />,
+                        children: [
+                            {
+                                path: "usuarios",
+                                element: <Usuarios />,
+                                loader: loaderUsuarios,
+                            },
+                            {
+                                path: "usuarios/registrar",
+                                element: <UsuariosRegistrar />,
+                                action: actionUsuarioRegistrar,
+                            },
+                        ],
                     },
-                    {
-                        path: "usuarios",
-                        element: <Usuarios />,
-                    },
-                    {
-                        path: "usuarios/registrar",
-                        element: <UsuariosRegistrar />,
-                        action: actionUsuarioRegistrar,
-                    },
+
+                    // ============ CONFIGURACIONES - Acceso a Admin y Vendedor ============
                     {
                         path: "configuraciones",
                         element: <Configuraciones />,

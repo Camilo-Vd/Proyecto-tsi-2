@@ -1,10 +1,14 @@
 import { NavLink, Link, useNavigate } from "react-router-dom";
+import { useRoleAccess } from "../hooks/useRoleAccess";
+import { useUsuario } from "../context/UsuarioContext";
 
 export default function NavBar() {
     const navigate = useNavigate();
+    const { isAdmin, isVendedor } = useRoleAccess();
+    const { cerrarSesion } = useUsuario();
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        cerrarSesion();
         navigate('/login');
     };
 
@@ -28,41 +32,68 @@ export default function NavBar() {
                 </button>
                 <div className="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li className="nav-item">
-                            <NavLink className="nav-link" to="/inventario">
-                                <i className="bi bi-box-seam me-1"></i> Inventario
-                            </NavLink>
-                        </li>
-                        <li className="nav-item">
-                            <NavLink className="nav-link" to="/ventas">
-                                <i className="bi bi-cash-stack me-1"></i> Ventas
-                            </NavLink>
-                        </li>
-                        <li className="nav-item">
-                            <NavLink className="nav-link" to="/compras">
-                                <i className="bi bi-cart4 me-1"></i> Compras
-                            </NavLink>
-                        </li>
-                        <li className="nav-item">
-                            <NavLink className="nav-link" to="/clientes">
-                                <i className="bi bi-person-lines-fill me-1"></i> Clientes
-                            </NavLink>
-                        </li>
-                        <li className="nav-item">
-                            <NavLink className="nav-link" to="/proveedores">
-                                <i className="bi bi-building me-1"></i> Proveedores
-                            </NavLink>
-                        </li>
-                        <li className="nav-item">
-                            <NavLink className="nav-link" to="/reportes">
-                                <i className="bi bi-bar-chart-line-fill me-1"></i> Reportes
-                            </NavLink>
-                        </li>
-                        <li className="nav-item">
-                            <NavLink className="nav-link" to="/usuarios">
-                                <i className="bi bi-people-fill me-1"></i> Usuarios
-                            </NavLink>
-                        </li>
+                        {/* INVENTARIO - Ambos pueden ver */}
+                        {(isAdmin || isVendedor) && (
+                            <li className="nav-item">
+                                <NavLink className="nav-link" to="/inventario">
+                                    <i className="bi bi-box-seam me-1"></i> Inventario
+                                </NavLink>
+                            </li>
+                        )}
+
+                        {/* VENTAS - Ambos pueden ver */}
+                        {(isAdmin || isVendedor) && (
+                            <li className="nav-item">
+                                <NavLink className="nav-link" to="/ventas">
+                                    <i className="bi bi-cash-stack me-1"></i> Ventas
+                                </NavLink>
+                            </li>
+                        )}
+
+                        {/* COMPRAS - Solo Admin */}
+                        {isAdmin && (
+                            <li className="nav-item">
+                                <NavLink className="nav-link" to="/compras">
+                                    <i className="bi bi-cart4 me-1"></i> Compras
+                                </NavLink>
+                            </li>
+                        )}
+
+                        {/* CLIENTES - Ambos pueden ver */}
+                        {(isAdmin || isVendedor) && (
+                            <li className="nav-item">
+                                <NavLink className="nav-link" to="/clientes">
+                                    <i className="bi bi-person-lines-fill me-1"></i> Clientes
+                                </NavLink>
+                            </li>
+                        )}
+
+                        {/* PROVEEDORES - Ambos pueden ver (Vendedor solo consulta) */}
+                        {(isAdmin || isVendedor) && (
+                            <li className="nav-item">
+                                <NavLink className="nav-link" to="/proveedores">
+                                    <i className="bi bi-building me-1"></i> Proveedores
+                                </NavLink>
+                            </li>
+                        )}
+
+                        {/* REPORTES - Solo Admin */}
+                        {isAdmin && (
+                            <li className="nav-item">
+                                <NavLink className="nav-link" to="/reportes">
+                                    <i className="bi bi-bar-chart-line-fill me-1"></i> Reportes
+                                </NavLink>
+                            </li>
+                        )}
+
+                        {/* USUARIOS - Solo Admin */}
+                        {isAdmin && (
+                            <li className="nav-item">
+                                <NavLink className="nav-link" to="/usuarios">
+                                    <i className="bi bi-people-fill me-1"></i> Usuarios
+                                </NavLink>
+                            </li>
+                        )}
                     </ul>
                     <div className="d-flex gap-2 align-items-center">
                         <Link to="/configuraciones" className="btn btn-outline-light border-0" style={{ background: "#22223b" }}>

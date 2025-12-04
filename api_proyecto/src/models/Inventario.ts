@@ -1,4 +1,4 @@
-import { Table, Column, Model, DataType, ForeignKey } from "sequelize-typescript";
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from "sequelize-typescript";
 import Producto from "./Producto";
 import Talla from "./Talla";
 
@@ -25,9 +25,30 @@ class Inventario extends Model {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
+        field: 'precio_unitario'
+    })
+    declare precio_unitario: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
         field: 'stock_actual'
     })
     declare stock_actual: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 5,
+        field: 'stock_critico'
+    })
+    declare stock_critico: number;
+
+    @BelongsTo(() => Producto, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+    declare producto: Producto;
+
+    @BelongsTo(() => Talla, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+    declare talla: Talla;
 }
 
 export default Inventario;

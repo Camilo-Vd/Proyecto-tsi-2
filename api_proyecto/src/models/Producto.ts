@@ -1,4 +1,4 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo, HasMany } from "sequelize-typescript";
+﻿import { Table, Column, Model, DataType, ForeignKey, BelongsTo, HasMany } from "sequelize-typescript";
 import Categoria from "./Categoria";
 import Inventario from "./Inventario";
 
@@ -19,13 +19,6 @@ class Producto extends Model {
         field: 'nombre_producto'
     })
     declare nombre_producto: string;
-
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-        field: 'precio_unitario'
-    })
-    declare precio_unitario: number;
 
     @ForeignKey(() => Categoria)
     @Column({

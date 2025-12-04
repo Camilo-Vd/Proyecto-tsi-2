@@ -1,14 +1,26 @@
 import { Form, redirect, useActionData, type ActionFunctionArgs } from "react-router-dom";
 import { useState } from "react";
-import { loginUsuario } from "../service/UsuarioServise";
+import { loginUsuario } from "../service/UsuarioService";
+import { formatearRUTInput } from "../utils/rutUtils";
 
 export async function action({ request }: ActionFunctionArgs) {
-    const formData = Object.fromEntries(await request.formData());
-    const resultado = await loginUsuario(formData);
-    if (!resultado.success) {
-        return resultado
+    try {
+        const formData = Object.fromEntries(await request.formData());
+        
+        const resultado = await loginUsuario(formData);
+        
+        if (!resultado.success) {
+            return resultado
+        }
+        
+        return redirect("/");
+    } catch (error) {
+        console.error('❌ Error en action:', error);
+        return {
+            success: false,
+            error: "Error al procesar login"
+        };
     }
-    return redirect("/");
 }
 
 export default function InicioSesion() {
@@ -19,41 +31,13 @@ export default function InicioSesion() {
     };
     const [rutFormateado, setRutFormateado] = useState("");
 
-    // Función para formatear el RUT automáticamente
-    const formatearRut = (valor: string) => {
-        // Remover todos los caracteres que no sean números o K/k
-        const rutLimpio = valor.replace(/[^0-9kK]/g, '');
-        
-        if (rutLimpio.length === 0) return '';
-        
-        // Separar el dígito verificador
-        const cuerpo = rutLimpio.slice(0, -1);
-        const dv = rutLimpio.slice(-1);
-        
-        if (cuerpo.length === 0) return dv;
-        
-        // Formatear el cuerpo con puntos
-        let cuerpoFormateado = '';
-        for (let i = cuerpo.length - 1, j = 0; i >= 0; i--, j++) {
-            if (j > 0 && j % 3 === 0) {
-                cuerpoFormateado = '.' + cuerpoFormateado;
-            }
-            cuerpoFormateado = cuerpo[i] + cuerpoFormateado;
-        }
-        
-        // Si hay dígito verificador, agregarlo con guión
-        if (dv) {
-            return cuerpoFormateado + '-' + dv.toUpperCase();
-        }
-        
-        return cuerpoFormateado;
-    };
-
     const manejarCambioRut = (e: React.ChangeEvent<HTMLInputElement>) => {
         const valor = e.target.value;
-        const rutFormateadoNuevo = formatearRut(valor);
+        const rutFormateadoNuevo = formatearRUTInput(valor);
         setRutFormateado(rutFormateadoNuevo);
     };
+
+    const handleSubmit = () => {};
 
     return (
         <div className="container d-flex align-items-center justify-content-center" style={{ minHeight: "100vh" }}>
@@ -65,7 +49,7 @@ export default function InicioSesion() {
                 {actionData?.error && (
                     <div className="alert alert-danger text-center">{actionData.error}</div>
                 )}
-                <Form method="POST">
+                <Form method="POST" onSubmit={handleSubmit}>
                     <div className="mb-3">
                         <label className="form-label">RUT</label>
                         <input 
